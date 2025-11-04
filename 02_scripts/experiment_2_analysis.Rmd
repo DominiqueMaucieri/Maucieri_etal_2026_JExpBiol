@@ -1,0 +1,972 @@
+---
+title: "Respirometry and Resistance"
+subtitle: "Sea Star Experiments at UVic"
+author: '[Dominique Maucieri](https://www.dominiquemaucieri.com)'
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Setup
+
+```{r, include = FALSE}
+
+#To clear the workspace
+rm(list = ls(all = T))
+
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, tidy = TRUE, message=FALSE)
+
+# My theme
+theme.dgm <- function () {
+  theme_classic(base_size = 12, 
+           base_family = "serif") +
+  theme(
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(colour = "black"),
+    axis.title = element_text(size = 14, face = "bold"),
+    axis.text = element_text(size = 12, face = "plain"),
+    legend.text = element_text(size = 12, face = "plain"),
+    legend.title = element_text(size = 14, face = "bold"))
+}
+
+theme.dgm.map <- function (){
+  theme_bw(base_size = 12, 
+           base_family = "serif") +
+  theme(panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(colour = "black"),
+    axis.title = element_text(size = 14, face = "bold"),
+    axis.text = element_text(size = 12, face = "plain"),
+    legend.text = element_text(size = 12, face = "plain"),
+    legend.title = element_text(size = 14, face = "bold")) 
+}
+
+#packages
+library(readxl)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(cowplot)
+library(DHARMa)
+library(lubridate)
+library(glmmTMB)
+library(survival)
+library(ggfortify)
+library(broom.mixed)
+library(grid)
+library(gridExtra)
+library(MuMIn)
+
+#load data
+meta_rates_raw <- read.csv(here("03_cleaned_data", "metabolic_rates.csv"))
+
+phys_char_raw <- read_excel(here("01_raw_data", "LS_Physical_Characteristics.xlsx"),
+                            sheet = "Sheet1")
+
+feeding_raw <- read_excel(here("01_raw_data", "LS_Feeding_Log.xlsx"),
+                            sheet = "feeding log")
+
+resistance_raw <- read_excel(here("01_raw_data", "LS_Experiment_Data.xlsx"),
+                            sheet = "Resistance_Times")
+
+#colors
+temp_colors <- c("#723163", "#4472CA")
+
+```
+
+# Physical Characteristics
+
+## Inital radii measures
+
+```{r}
+radii_before <- phys_char_raw %>%
+  filter(!is.na(Treatment_Code)) %>%
+  reframe(mean = mean(Before_radius_mm),
+            se = sd(Before_radius_mm)/sqrt(length(Before_radius_mm)))
+```
+
+
+```{r, fig.height=6, fig.width=7}
+experimental_stars <- phys_char_raw %>%
+  filter(!is.na(Treatment_Code)) %>%
+  mutate(diff_radius = After_radius_mm - Before_radius_mm,
+         diff_wet_weight = After_wet_mass_g - Before_wet_mass_g) %>%
+  mutate(Temp_Treatment = factor(Temp_Treatment,
+                                 levels = c("Temp_10C", "Temp_15C"),
+                                 labels = c("10°C", "15°C")),
+         Food_Treatment = factor(Food_Treatment,
+                                 levels = c("fed", "unfed"),
+                                 labels = c("Access\nto food", 
+                                            "No access\nto food"))) %>%
+  left_join(read.csv(here("03_cleaned_data", "AFDM_clean.csv")), 
+            by = join_by(ID == SeaStar_ID)) %>%
+  mutate(Meta_Cat = case_when(
+           Temp_Treatment == "10°C" & Metabolic_Temp_Treatment == "Meta_10C" ~ "Same as Tank",
+           Temp_Treatment == "10°C" & Metabolic_Temp_Treatment == "Meta_15C" ~ "Elevated",
+           Temp_Treatment == "15°C" & Metabolic_Temp_Treatment == "Meta_15C" ~ "Same as Tank",
+           Temp_Treatment == "15°C" & Metabolic_Temp_Treatment == "Meta_20C" ~ "Elevated"
+         ),
+         Meta_Cat = factor(Meta_Cat, 
+                                 levels = c("Same as Tank", 
+                                            "Elevated")),
+         Mesocosm_Number = case_when(
+           Temp_Treatment == "10°C" & Sampling_Day_Treatment == "1st_Sampling" ~ "Tank_3",
+           Temp_Treatment == "10°C" & Sampling_Day_Treatment == "2nd_Sampling" ~ "Tank_4",
+           Temp_Treatment == "15°C" & Sampling_Day_Treatment == "1st_Sampling" ~ "Tank_1",
+           Temp_Treatment == "15°C" & Sampling_Day_Treatment == "2nd_Sampling" ~ "Tank_2"
+        ))
+```
+
+
+
+
+## Change in Radius
+
+```{r, fig.height=7, fig.width=6}
+(arm_radius_boxplot <- ggplot(experimental_stars, 
+                              aes(x = Food_Treatment, y = diff_radius, 
+                                  fill = Temp_Treatment)) + 
+  geom_boxplot() +
+  theme.dgm() + 
+  scale_fill_manual(values = c("#723163", "#4472CA")) +
+  labs(x = "\nFood Access Treatment", y = "Change in arm radius (mm)\n", fill = "Aquaria\nTemperature\nTreatment") +
+  theme(legend.position = "top"))
+
+```
+
+
+### Model
+
+
+```{r, fig.show='hide'}
+# hist(experimental_stars$diff_radius)
+
+diff_radius_mod_full <- glmmTMB(diff_radius ~ Food_Treatment*Temp_Treatment + 
+                             (1|Mesocosm_Number), 
+                        data = experimental_stars)
+
+plot(simulateResiduals(diff_radius_mod_full))
+
+```
+
+```{r, fig.show='hide'}
+diff_radius_mod_no_re <- glmmTMB(diff_radius ~ Food_Treatment*Temp_Treatment, 
+                        data = experimental_stars)
+
+plot(simulateResiduals(diff_radius_mod_no_re))
+```
+
+```{r, fig.show='hide'}
+diff_radius_mod_no_inter <- glmmTMB(diff_radius ~ Food_Treatment + Temp_Treatment, 
+                        data = experimental_stars)
+
+plot(simulateResiduals(diff_radius_mod_no_inter))
+```
+
+
+#### AICc
+
+```{r}
+AICc(diff_radius_mod_full, diff_radius_mod_no_re, diff_radius_mod_no_inter) %>%
+  arrange(AICc) %>%
+  mutate(Delta_AICc = AICc - min(AICc)) %>%
+  kable(digits = 2, align = "c", caption = "Difference in Radius Models") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))
+
+diff_radius_best_mod <- diff_radius_mod_no_inter
+```
+
+#### Best Model
+
+```{r}
+summary(diff_radius_best_mod)
+```
+
+
+
+```{r}
+
+CI_diff_radius_best_mod <- tidy(diff_radius_best_mod, effects = "fixed", 
+                                      conf.int = TRUE, conf.method = "profile") %>%
+  mutate(significance = if_else(conf.low > 0 | conf.high < 0, "Sig", "No Sig"),
+         significance = factor(significance, levels = c("Sig", "No Sig")))%>%
+  mutate(term = case_when(
+    term == "(Intercept)" ~ "Intercept",
+    term == "Food_TreatmentNo access\nto food" ~  "No access to food",                         
+    term == "Temp_Treatment15°C" ~ "15°C"
+  ))
+
+
+
+(plot_CI_diff_radius_best_mod <- ggplot(CI_diff_radius_best_mod, 
+                                           aes(x = estimate, 
+                                               y = reorder(term, estimate), 
+                                               color = significance)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray", linewidth = 1) +
+  geom_point(size = 4) +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, linewidth = 1)  +
+  scale_color_manual(values = c("palevioletred", "black")) +
+  theme.dgm() +
+  labs(x = "\nModel Estimates (± CI)", y = "Predictor Variables\n") +
+  theme(legend.position = "none"))
+
+```
+
+## Change in wet weight
+
+```{r, fig.width=6, fig.height=7}
+
+(wet_weight_boxplot <- ggplot(experimental_stars, 
+                             aes(x = Food_Treatment, y = diff_wet_weight, 
+                                 fill = Temp_Treatment)) + 
+  geom_boxplot() +
+  theme.dgm() + 
+  scale_fill_manual(values = c("#723163", "#4472CA"))+
+  labs(x = "\nFood Access Treatment", y = "Change in wet weight (g)\n", fill = "Aquaria\nTemperature\nTreatment") +
+  theme(legend.position = "top"))
+
+```
+
+
+### Model
+
+```{r, fig.show='hide'}
+# hist(experimental_stars$diff_wet_weight)
+
+diff_wet_weight_mod_full <- glmmTMB(diff_wet_weight ~ Food_Treatment*Temp_Treatment + 
+                             (1|Mesocosm_Number), 
+                        data = experimental_stars)
+
+plot(simulateResiduals(diff_wet_weight_mod_full))
+```
+
+```{r, fig.show='hide'}
+diff_wet_weight_mod_no_re <- glmmTMB(diff_wet_weight ~ Food_Treatment*Temp_Treatment, 
+                        data = experimental_stars)
+
+plot(simulateResiduals(diff_wet_weight_mod_no_re))
+```
+
+```{r, fig.show='hide'}
+diff_wet_weight_mod_no_inter <- glmmTMB(diff_wet_weight ~ Food_Treatment + Temp_Treatment, 
+                        data = experimental_stars)
+
+plot(simulateResiduals(diff_wet_weight_mod_no_inter))
+```
+
+
+#### AICc
+```{r}
+AICc(diff_wet_weight_mod_full, diff_wet_weight_mod_no_re, diff_wet_weight_mod_no_inter) %>%
+  arrange(AICc) %>%
+  mutate(Delta_AICc = AICc - min(AICc)) %>%
+  kable(digits = 2, align = "c", caption = "Difference in Wet Weight Models") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))
+
+diff_wet_weight_best_mod <- diff_wet_weight_mod_no_inter
+```
+
+#### Best Model
+
+```{r}
+summary(diff_wet_weight_best_mod)
+```
+
+
+
+```{r}
+
+CI_diff_wet_weight_best_mod <- tidy(diff_wet_weight_best_mod, effects = "fixed", 
+                                      conf.int = TRUE, conf.method = "profile") %>%
+  mutate(significance = if_else(conf.low > 0 | conf.high < 0, "Sig", "No Sig"),
+         significance = factor(significance, levels = c("Sig", "No Sig"))) %>%
+  mutate(term = case_when(
+    term == "(Intercept)" ~ "Intercept",
+    term == "Food_TreatmentNo access\nto food" ~  "No access to food",                         
+    term == "Temp_Treatment15°C" ~ "15°C"
+  ))
+
+
+(plot_CI_diff_wet_weight_best_mod <- ggplot(CI_diff_wet_weight_best_mod, 
+                                           aes(x = estimate, 
+                                               y = reorder(term, estimate), 
+                                               color = significance)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray", linewidth = 1) +
+  geom_point(size = 4) +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, linewidth = 1)  +
+  scale_color_manual(values = c("palevioletred", "black")) +
+  theme.dgm() +
+  labs(x = "\nModel Estimates (± CI)", y = "Predictor Variables\n") +
+  theme(legend.position = "none"))
+
+```
+
+
+```{r}
+avg_change_ww <- experimental_stars %>%
+  group_by(Food_Treatment) %>%
+  summarize(mean_change = mean(diff_wet_weight),
+            se_change = sd(diff_wet_weight)/sqrt(length(diff_wet_weight)))
+avg_change_ww
+```
+
+
+## Initial Wet Weight distribution
+
+```{r, fig.show='hide'}
+initial_wet_weight_mod <- glmmTMB(Before_wet_mass_g ~ Food_Treatment*Temp_Treatment+
+                                    Meta_Cat + Meta_Cat:Food_Treatment +
+                                    Meta_Cat:Temp_Treatment, 
+                        data = experimental_stars)
+
+plot(simulateResiduals(initial_wet_weight_mod))
+```
+
+
+```{r}
+summary(initial_wet_weight_mod)
+```
+
+
+```{r, fig.height=6, fig.width=6}
+(initial_ww_boxplot <- ggplot(experimental_stars, 
+                              aes(x = Food_Treatment, y = Before_wet_mass_g, 
+                                  fill = Temp_Treatment, alpha = Meta_Cat)) + 
+  geom_boxplot() +
+  theme.dgm() + 
+  scale_fill_manual(values = c("#723163", "#4472CA")) +
+  scale_alpha_manual(values = c(1, 0.3)) +
+  labs(x = "\nNutritious state", y = "Initial Wet Weight (g)\n", fill = "Aquaria\nTemperature\nTreatment",
+       alpha = "Respirometry\nTemperature") +
+  theme(legend.position = "right")+
+  guides(alpha = guide_legend(override.aes = list(fill = "darkgrey"))))
+
+```
+
+
+# Figure S7
+
+```{r, fig.width=10, fig.height=10}
+
+Figure_S7_top_coef <- plot_grid(NULL, plot_CI_diff_wet_weight_best_mod, NULL, 
+                                ncol = 1, rel_heights = c(0.23,1,0.03))
+
+Figure_S7_top <- plot_grid(Figure_S7_top_coef, wet_weight_boxplot, nrow = 1, 
+                       labels = c("(a)", "(b)"), rel_widths = c(2/3, 1), 
+  label_fontfamily = "serif")
+
+Figure_S7_bottom_coef <- plot_grid(NULL, plot_CI_diff_radius_best_mod, NULL, 
+                                ncol = 1, rel_heights = c(0.23,1,0.03))
+
+Figure_S7_bottom <- plot_grid(Figure_S7_bottom_coef, arm_radius_boxplot, nrow = 1, 
+                       labels = c("(c)", "(d)"), rel_widths = c(2/3, 1), 
+  label_fontfamily = "serif")
+
+(Figure_S7 <- plot_grid(Figure_S7_top, Figure_S7_bottom, ncol = 1))
+
+```
+
+
+```{r, message=FALSE}
+png(filename = here("04_tables_figures", "Figure_S7.png"), width = 10, height = 10, units = "in", pointsize = 15, res = 300)
+Figure_S7
+dev.off()
+```
+
+
+
+# Metabolic Rates
+
+```{r}
+
+meta_rates <- meta_rates_raw %>%
+  mutate(Tank_Treatment = factor(as.factor(Tank_Treatment), levels = c("10", "15"),
+                                 labels = c("10°C", "15°C")),
+         Meta_Treatment = factor(as.factor(Meta_Treatment), 
+                                 levels = c("10", "15", "20"),
+                                 labels = c("10°C", "15°C", "20°C")),
+         Food_Treatment = factor(as.factor(Food_Treatment), 
+                                 levels = c("fed", "unfed"),
+                                 labels = c("Access\nto food", 
+                                            "No access\nto food")),
+         Meta_Cat = case_when(
+           Tank_Treatment == "10°C" & Meta_Treatment == "10°C" ~ "Same as\nAquaria",
+           Tank_Treatment == "10°C" & Meta_Treatment == "15°C" ~ "Elevated\n5°C",
+           Tank_Treatment == "15°C" & Meta_Treatment == "15°C" ~ "Same as\nAquaria",
+           Tank_Treatment == "15°C" & Meta_Treatment == "20°C" ~ "Elevated\n5°C"
+         ),
+         Meta_Cat = factor(Meta_Cat, 
+                                 levels = c("Same as\nAquaria", 
+                                            "Elevated\n5°C")),
+         mass_spec_O2 = -1 * mass_spec_O2, 
+         Mesocosm_Number = case_when(
+           Tank_Treatment == "10°C" & Sampling_Day == "1st_Sampling" ~ "Tank_3",
+           Tank_Treatment == "10°C" & Sampling_Day == "2nd_Sampling" ~ "Tank_4",
+           Tank_Treatment == "15°C" & Sampling_Day == "1st_Sampling" ~ "Tank_1",
+           Tank_Treatment == "15°C" & Sampling_Day == "2nd_Sampling" ~ "Tank_2"
+        )) %>%
+  rename(Temp_Treatment = Tank_Treatment)
+  
+```
+
+
+```{r, fig.height=6, fig.width=8}
+
+(respirometry_boxplot <- ggplot(meta_rates, aes(x = Meta_Cat, y = mass_spec_O2,
+                       alpha = Food_Treatment, fill = Temp_Treatment)) +
+  geom_boxplot(position = position_dodge2(preserve = "single")) +
+  theme.dgm() +
+  scale_fill_manual(values = temp_colors) +
+  scale_alpha_manual(values = c(1, 0.3)) +
+  labs(x= "\nRespirometry Temperature", 
+       y = expression(bold("Mass Specific O"[2]*" Rate (mL h"^{-1}*"g"^{-1}*")")),
+       alpha = "Food Access\nTreatment", fill = "Aquaria\nTemperature\nTreatment") +
+  guides(alpha = guide_legend(override.aes = list(fill = "darkgrey"))) +
+  facet_wrap(~Temp_Treatment) + 
+  theme(axis.title.y = element_text(margin = margin(r = 12))))
+
+```
+
+
+## Model
+
+
+```{r, fig.show='hide'}
+meta_mod_full <- glmmTMB(mass_spec_O2 ~ Food_Treatment*Temp_Treatment+
+                                    Meta_Cat + Meta_Cat:Food_Treatment +
+                                    Meta_Cat:Temp_Treatment + (1|Mesocosm_Number), 
+                        data = meta_rates)
+
+plot(simulateResiduals(meta_mod_full))
+```
+
+```{r, fig.show='hide'}
+meta_mod_no_re <- glmmTMB(mass_spec_O2 ~ Food_Treatment*Temp_Treatment+
+                                    Meta_Cat + Meta_Cat:Food_Treatment +
+                                    Meta_Cat:Temp_Treatment , 
+                        data = meta_rates)
+
+plot(simulateResiduals(meta_mod_no_re))
+```
+
+```{r, fig.show='hide'}
+meta_mod_one_inter <- glmmTMB(mass_spec_O2 ~ Food_Treatment*Temp_Treatment+
+                                    Meta_Cat, 
+                        data = meta_rates)
+
+plot(simulateResiduals(meta_mod_one_inter))
+```
+
+```{r, fig.show='hide'}
+meta_mod_no_inter <- glmmTMB(mass_spec_O2 ~ Food_Treatment + Temp_Treatment+
+                                    Meta_Cat, 
+                        data = meta_rates)
+
+plot(simulateResiduals(meta_mod_no_inter))
+```
+
+#### AICc
+```{r}
+AICc(meta_mod_full, meta_mod_no_re, meta_mod_one_inter, meta_mod_no_inter) %>%
+  arrange(AICc) %>%
+  mutate(Delta_AICc = AICc - min(AICc)) %>%
+  kable(digits = 2, align = "c", caption = "meta Models") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))
+
+meta_best_mod <- meta_mod_one_inter
+```
+
+#### Best Model
+
+```{r}
+summary(meta_best_mod)
+```
+
+
+
+```{r}
+
+CI_meta_best_mod <- tidy(meta_best_mod, effects = "fixed", 
+                                      conf.int = TRUE, conf.method = "profile") %>%
+  mutate(significance = if_else(conf.low > 0 | conf.high < 0, "Sig", "No Sig"),
+         significance = factor(significance, levels = c("Sig", "No Sig"))) %>%
+  mutate(term = case_when(
+    term == "(Intercept)" ~ "Intercept",
+    term == "Food_TreatmentNo access\nto food" ~  "No access to food",
+    term == "Temp_Treatment15°C" ~ "15°C",
+    term == "Meta_CatElevated\n5°C" ~ "Elevated respirometry\ntemperature",
+    term == "Food_TreatmentNo access\nto food:Temp_Treatment15°C" ~ "No access to food:\n15°C"
+  ))
+
+
+(plot_CI_meta_best_mod <- ggplot(CI_meta_best_mod, 
+                                           aes(x = estimate, 
+                                               y = reorder(term, estimate), 
+                                               color = significance)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray", linewidth = 1) +
+  geom_point(size = 4) +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, linewidth = 1)  +
+  scale_color_manual(values = c("palevioletred", "black")) +
+  theme.dgm() +
+  labs(x = "\nModel Estimates (± CI)", y = "Predictor Variables\n") +
+  theme(legend.position = "none"))
+
+```
+
+# Figure 6
+
+```{r, fig.height=7, fig.width=12}
+
+Figure_6_coef <- plot_grid(NULL, plot_CI_meta_best_mod, NULL, ncol = 1, rel_heights = c(0.05,1,0.03))
+
+(Figure_6 <- plot_grid(Figure_6_coef, respirometry_boxplot, nrow = 1, 
+                       labels = c("(a)", "(b)"), rel_widths = c(2/3, 1), 
+  label_fontfamily = "serif"))
+
+```
+
+```{r, message=FALSE}
+png(filename = here("04_tables_figures", "Figure_6.png"), width = 12, height = 7, units = "in", pointsize = 15, res = 300)
+Figure_6
+dev.off()
+```
+
+
+# Resistance Time
+
+```{r}
+
+treatment_classifications <- meta_rates %>%
+  dplyr::select(Seastar_ID, Food_Treatment, Temp_Treatment,
+                Meta_Treatment, Sampling_Day, Meta_Cat, Mesocosm_Number)
+
+weights <- experimental_stars %>%
+  dplyr::select(ID, Dry_mass_g, Ash_mass_g, AFDM_g)
+
+resistance_clean <- resistance_raw %>%
+  mutate(resistance_time_s = hour(resistance_raw$Time_Elapsed) * 3600 +
+                           minute(resistance_raw$Time_Elapsed) * 60 +
+                           second(resistance_raw$Time_Elapsed),
+         resistance_time_m = resistance_time_s/60,
+         resistance_time_h = resistance_time_m/60) %>%
+  dplyr::select(ID, resistance_time_s, resistance_time_m, resistance_time_h) %>%
+  left_join(treatment_classifications, by = join_by("ID" == "Seastar_ID")) %>%
+  left_join(weights, by = join_by(ID == ID)) 
+
+```
+
+```{r}
+
+(resistance_boxplot <- ggplot(resistance_clean, aes(x = Meta_Cat, y = resistance_time_h,
+                       alpha = Food_Treatment, fill = Temp_Treatment)) +
+  geom_boxplot(position = position_dodge2(preserve = "single")) +
+  theme.dgm() +
+  scale_fill_manual(values = temp_colors) +
+  scale_alpha_manual(values = c(1, 0.3)) +
+  labs(x= "\nRespirometry Temperature", y = "Resistance Time (h)\n",
+       alpha = "Food Access\nTreatment", fill = "Aquaria\nTemperature\nTreatment") +
+  guides(alpha = guide_legend(override.aes = list(fill = "darkgrey")))+
+  facet_wrap(~Temp_Treatment))
+
+
+```
+
+
+
+
+
+
+## Model
+
+```{r, fig.show='hide'}
+resistance_mod_full <- glmmTMB(resistance_time_h ~ Food_Treatment*Temp_Treatment+
+                                    Meta_Cat + Meta_Cat:Food_Treatment +
+                                    Meta_Cat:Temp_Treatment + scale(AFDM_g) + 
+                                 (1|Mesocosm_Number), 
+                        data = resistance_clean)
+
+plot(simulateResiduals(resistance_mod_full))
+```
+
+```{r, fig.show='hide'}
+resistance_mod_no_re <- glmmTMB(resistance_time_h ~ Food_Treatment*Temp_Treatment+
+                                    Meta_Cat + Meta_Cat:Food_Treatment +
+                                    Meta_Cat:Temp_Treatment + scale(AFDM_g), 
+                        data = resistance_clean)
+
+plot(simulateResiduals(resistance_mod_no_re))
+```
+
+```{r, fig.show='hide'}
+resistance_mod_one_inter <- glmmTMB(resistance_time_h ~ Food_Treatment*Temp_Treatment+
+                                    Meta_Cat + scale(AFDM_g), 
+                        data = resistance_clean)
+
+plot(simulateResiduals(resistance_mod_one_inter))
+```
+
+```{r, fig.show='hide'}
+resistance_mod_no_inter <- glmmTMB(resistance_time_h ~ Food_Treatment + Temp_Treatment+
+                                    Meta_Cat + scale(AFDM_g), 
+                        data = resistance_clean)
+
+plot(simulateResiduals(resistance_mod_no_inter))
+```
+
+#### AICc
+```{r}
+AICc(resistance_mod_full, resistance_mod_no_re, resistance_mod_one_inter, resistance_mod_no_inter) %>%
+  arrange(AICc) %>%
+  mutate(Delta_AICc = AICc - min(AICc)) %>%
+  kable(digits = 2, align = "c", caption = "Resistance Models") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))
+
+resistance_best_mod <- resistance_mod_no_inter
+```
+
+#### Best Model
+
+```{r}
+summary(resistance_best_mod)
+```
+
+
+
+```{r}
+
+CI_resistance_best_mod <- tidy(resistance_best_mod, effects = "fixed", 
+                                      conf.int = TRUE, conf.method = "profile") %>%
+  mutate(significance = if_else(conf.low > 0 | conf.high < 0, "Sig", "No Sig"),
+         significance = factor(significance, levels = c("Sig", "No Sig"))) %>%
+  mutate(term = case_when(
+    term == "(Intercept)" ~ "Intercept",
+    term == "Food_TreatmentNo access\nto food" ~  "No access to food",
+    term == "Temp_Treatment15°C" ~ "15°C",
+    term == "Meta_CatElevated\n5°C" ~ "Elevated respirometry\ntemperature",
+    term == "Food_TreatmentNo access\nto food:Temp_Treatment15°C" ~ "No access to food:\n15°C",
+    term == "scale(AFDM_g)" ~ "AFDM"
+  ))
+
+
+(plot_CI_resistance_best_mod <- ggplot(CI_resistance_best_mod, 
+                                           aes(x = estimate, 
+                                               y = reorder(term, estimate), 
+                                               color = significance)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray", linewidth = 1) +
+  geom_point(size = 4) +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, linewidth = 1)  +
+  scale_color_manual(values = c("palevioletred", "black")) +
+  theme.dgm() +
+  labs(x = "\nModel Estimates (± CI)", y = "Predictor Variables\n") +
+  theme(legend.position = "none"))
+
+```
+
+
+# Figure 7
+
+```{r, fig.height=7, fig.width=12}
+
+Figure_7_coef <- plot_grid(NULL, plot_CI_resistance_best_mod, NULL, ncol = 1, rel_heights = c(0.05,1,0.03))
+
+(Figure_7 <- plot_grid(Figure_7_coef, resistance_boxplot, nrow = 1, 
+                       labels = c("(a)", "(b)"), rel_widths = c(2/3, 1), 
+  label_fontfamily = "serif"))
+
+```
+
+```{r, message=FALSE}
+png(filename = here("04_tables_figures", "Figure_7.png"), width = 12, height = 7, units = "in", pointsize = 15, res = 300)
+Figure_7
+dev.off()
+```
+
+
+# Feeding Rates
+
+
+## Over Time
+
+```{r}
+
+classifications <- experimental_stars %>%
+  dplyr::select(ID, Food_Treatment, Temp_Treatment, Meta_Cat, Mesocosm_Number)
+
+feeding_clean <- feeding_raw  %>%
+  left_join(classifications, by = "ID") %>%
+  filter(!is.na(Food_Treatment) & !is.na(Temp_Treatment)) %>%
+  mutate(Phase = case_when(
+           Timepoint %in% c("Feeding_1", "Feeding_2", "Feeding_3") ~ "PreExperiment",
+           Timepoint %in% c("Feeding_4", "Feeding_5", "Feeding_6", 
+                            "Feeding_7", "Feeding_8") ~ "Experiment"
+         ),
+         Day_cont = case_when(
+           Timepoint == "Feeding_4" ~ 4,
+           Timepoint == "Feeding_5" ~ 8,
+           Timepoint == "Feeding_6" ~ 12,
+           Timepoint == "Feeding_7" ~ 16,
+           Timepoint == "Feeding_8" ~ 20,
+           .default = NA
+         ),
+         Heat_Colors = case_when(
+           Temp_Treatment == "10°C" ~ "#723163",
+           Temp_Treatment == "15°C" ~ "#4472CA"
+         ),
+         Amount_Eatten = as.numeric(Amount_Eatten)) %>%
+  rename(Amount_Eaten = Amount_Eatten)
+
+```
+
+```{r, fig.width=24, fig.height=35}
+
+ggplot(feeding_clean, aes(x = Date, y = Amount_Eaten, color = ID,
+                          alpha = Phase)) +
+  geom_point(size = 4) +
+  geom_line(linewidth = 2) +
+  theme.dgm() +
+  theme(legend.position = "none") +
+  scale_color_manual(values = feeding_clean$Heat_Colors) +
+  scale_alpha_manual(values = c(1, 0.3)) +
+  facet_wrap(~ID, ncol = 8) 
+
+```
+
+```{r, fig.width=24, fig.height=35}
+
+feeding_experiments <- feeding_clean %>%
+  filter(Phase == "Experiment" & 
+         Food_Treatment == "Access\nto food")
+
+ggplot(feeding_experiments, aes(x = Date, y = Amount_Eaten, color = ID,
+                          alpha = Phase)) +
+  geom_point(size = 4) +
+  geom_line(linewidth = 2) +
+  theme.dgm() +
+  theme(legend.position = "none") +
+  scale_color_manual(values = feeding_clean$Heat_Colors) +
+  scale_alpha_manual(values = c(1, 0.3)) +
+  facet_wrap(~ID, ncol = 6) 
+
+```
+
+### Rates
+
+```{r}
+
+feeding_rate_df <- data.frame()
+
+for(i in 1:length(unique(feeding_experiments$ID))){
+  
+  xx_df <- feeding_experiments %>%
+    filter(ID == unique(feeding_experiments$ID)[i])
+  
+  xx_cor <- cor.test(xx_df$Day_cont, xx_df$Amount_Eaten, 
+                     method = "spearman", exact=FALSE)
+  
+  xx_values <- data.frame(ID = unique(feeding_experiments$ID)[i], 
+                          Temp_Treatment = xx_df$Temp_Treatment[1],
+                          Rho = xx_cor$estimate)
+  row.names(xx_values) <- NULL
+  
+  feeding_rate_df <- rbind(feeding_rate_df, xx_values)
+  
+}
+
+feeding_rate_df[is.na(feeding_rate_df)] <- 0
+
+
+```
+
+```{r, fig.width=8, fig.height=5}
+
+(rate_feeding_boxplot <- ggplot(feeding_rate_df, 
+                             aes(x = Temp_Treatment, y = Rho, fill = Temp_Treatment)) + 
+  geom_boxplot() +
+  theme.dgm() + 
+  scale_fill_manual(values = c("#723163", "#4472CA"))+
+  labs(x = "\nAquaria Temperature Treatment", y = "Correlation of Mussel\nConsumption Over Time\n") +
+  theme(legend.position = "none")) 
+
+```
+
+
+### Model
+```{r}
+
+# hist(feeding_rate_df$Rho)
+
+wilcox.test(Rho ~ Temp_Treatment,
+                      data = feeding_rate_df, exact=FALSE)
+
+```
+
+## Overall
+
+```{r}
+
+feeding_experiments_sum <- feeding_experiments %>%
+  group_by(ID, Food_Treatment, Temp_Treatment) %>%
+  summarise(total_fed = 5,
+            total_ate = sum(Amount_Eaten)) %>%
+  mutate(Prop_Ate = total_ate/total_fed)
+
+```
+
+
+```{r, fig.width=8, fig.height=5}
+
+(total_feeding_boxplot <- ggplot(feeding_experiments_sum, 
+                             aes(x = Temp_Treatment, y = Prop_Ate, fill = Temp_Treatment)) + 
+  geom_boxplot() +
+  theme.dgm() + 
+  scale_fill_manual(values = c("#723163", "#4472CA"))+
+  labs(x = "\nAquaria Temperature Treatment", y="\nTotal Proportion of Mussels Ate\n") +
+  theme(legend.position = "none")) 
+
+```
+
+
+### Model
+
+```{r}
+# hist(feeding_experiments_sum$Prop_Ate)
+
+wilcox.test(Prop_Ate ~ Temp_Treatment,
+                      data = feeding_experiments_sum,exact=FALSE)
+```
+
+```{r}
+feeding_mod_sum <- feeding_experiments_sum %>%
+  group_by(Temp_Treatment) %>%
+  summarize(mean_prop = mean(Prop_Ate),
+            se_prop = sd(Prop_Ate) / sqrt(length(Prop_Ate)))
+
+# 10-15
+feeding_mod_sum$mean_prop[1] - feeding_mod_sum$mean_prop[2]
+```
+
+
+# Figure S8
+
+```{r, fig.height=7, fig.width=10}
+
+Figure_S8 <- plot_grid(rate_feeding_boxplot+ labs(x = ""), 
+                       total_feeding_boxplot + labs(x = ""), 
+                       nrow = 1, 
+                       labels = c("(a)", "(b)"), 
+  label_fontfamily = "serif")
+
+Figure_S8_xaxis_title <- textGrob("Aquaria Temperature Treatment\n", 
+                   gp=gpar(fontface="bold", fontfamily = "serif", 
+                           col="black", fontsize=14))
+
+grid.arrange(arrangeGrob(Figure_S8, bottom = Figure_S8_xaxis_title))
+
+```
+
+```{r, message=FALSE}
+png(filename = here("04_tables_figures", "Figure_S8.png"), width = 10, height = 7, units = "in", pointsize = 15, res = 300)
+grid.arrange(arrangeGrob(Figure_S8, bottom = Figure_S8_xaxis_title))
+dev.off()
+```
+
+
+# Loggers
+
+```{r}
+
+logger_10_1st_R1 <- read.csv(here("01_raw_data/temp_loggers",
+                               "10C 1st-R1_log_from_20250130_to_20250220_.csv")) %>%
+  mutate(Time = as.POSIXct(Time)) %>%
+  filter(Time >= as.POSIXct("2025-01-27 13:00:00") &
+         Time <= as.POSIXct("2025-02-17 15:00:00")) %>%
+  dplyr::select(Time, Temperature...) %>%
+  mutate(Tank = "T10_1st")
+
+logger_10_1st_R2 <- read.csv(here("01_raw_data/temp_loggers",
+                               "10C 1st-R2_log_from_20250130_to_20250220_.csv"))%>%
+  mutate(Time = as.POSIXct(Time)) %>%
+  filter(Time >= as.POSIXct("2025-01-27 13:00:00") &
+         Time <= as.POSIXct("2025-02-17 15:00:00")) %>%
+  dplyr::select(Time, Temperature...)%>%
+  mutate(Tank = "T10_1st")
+
+
+logger_10_2nd_R1 <- read.csv(here("01_raw_data/temp_loggers",
+                               "10C 2nd-R1_log_from_20250131_to_20250221_.csv")) %>%
+  mutate(Time = as.POSIXct(Time)) %>%
+  filter(Time >= as.POSIXct("2025-01-27 13:00:00") &
+         Time <= as.POSIXct("2025-02-18 14:00:00"))%>%
+  dplyr::select(Time, Temperature...) %>%
+  mutate(Tank = "T10_2nd")
+
+logger_10_2nd_R2 <- read.csv(here("01_raw_data/temp_loggers",
+                               "10C 2nd-R2_log_from_20250131_to_20250221_.csv")) %>%
+  mutate(Time = as.POSIXct(Time)) %>%
+  filter(Time >= as.POSIXct("2025-01-27 13:00:00") &
+         Time <= as.POSIXct("2025-02-18 14:00:00")) %>%
+  dplyr::select(Time, Temperature...) %>%
+  mutate(Tank = "T10_2nd")
+
+
+logger_15_1st_R1 <- read.csv(here("01_raw_data/temp_loggers",
+                               "15C 1st-R1_log_from_20250130_to_20250220_.csv")) %>%
+  filter(Time >= as.POSIXct("2025-01-27 13:00:00") &
+         Time <= as.POSIXct("2025-02-17 15:00:00")) %>%
+  dplyr::select(Time, Temperature...) %>%
+  mutate(Tank = "T15_1st")
+
+logger_15_1st_R2 <- read.csv(here("01_raw_data/temp_loggers",
+                               "15C 1st-R2_log_from_20250130_to_20250220_.csv")) %>%
+  filter(Time >= as.POSIXct("2025-01-27 13:00:00") &
+         Time <= as.POSIXct("2025-02-17 15:00:00")) %>%
+  dplyr::select(Time, Temperature...) %>%
+  mutate(Tank = "T15_1st")
+
+logger_15_2nd_R1 <- read.csv(here("01_raw_data/temp_loggers",
+                               "15C 2nd-R1_log_from_20250131_to_20250221_.csv")) %>%
+  filter(Time >= as.POSIXct("2025-01-27 13:00:00") &
+         Time <= as.POSIXct("2025-02-17 14:00:00")) %>%
+  dplyr::select(Time, Temperature...) %>%
+  mutate(Tank = "T15_2nd")
+
+logger_15_2nd_R2 <- read.csv(here("01_raw_data/temp_loggers",
+                               "15C 2nd-R2_log_from_20250131_to_20250221_.csv")) %>%
+  filter(Time >= as.POSIXct("2025-01-27 13:00:00") &
+         Time <= as.POSIXct("2025-02-17 14:00:00")) %>%
+  dplyr::select(Time, Temperature...) %>%
+  mutate(Tank = "T15_2nd")
+
+Loggers <- rbind(logger_10_1st_R1, logger_10_1st_R2,
+                 logger_10_2nd_R1, logger_10_2nd_R2,
+                 logger_15_1st_R1, logger_15_1st_R2,
+                 logger_15_2nd_R1, logger_15_2nd_R2) %>%
+  group_by(Time, Tank) %>%
+  summarize(daily_avg = mean(Temperature...),
+            .groups = "drop") 
+
+Loggers_avg <- Loggers %>%
+  group_by(Tank) %>%
+  summarise(mean_temp = round(mean(daily_avg), 2),
+            se_temp = round(sd(daily_avg)/sqrt(length(daily_avg)), 4),
+            .groups = "drop")
+
+write.csv(Loggers_avg, file = here("04_tables_figures", "Table_S3.csv"),
+          row.names = FALSE)
+
+```
+
+
+
+
+
+

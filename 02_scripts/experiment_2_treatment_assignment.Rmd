@@ -1,0 +1,294 @@
+---
+title: "Treatment Assignments"
+subtitle: "Sea Star Thermal Stressors at UVic"
+author: '[Dominique Maucieri](https://www.dominiquemaucieri.com)'
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, include = FALSE}
+
+library(readxl)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, tidy = TRUE, message=FALSE)
+
+phys_char <- read_excel(here("01_raw_data", "LS_Physical_Characteristics.xlsx"))
+
+```
+
+```{r}
+ggplot(phys_char, aes(x = Before_wet_mass_g)) +
+  geom_histogram(binwidth = 5)
+
+ggplot(phys_char, aes(x = Before_radius_mm)) +
+  geom_histogram(binwidth = 5)
+```
+
+```{r}
+
+phys_char_cleaned <- phys_char %>%
+  filter(!ID %in% c("LS24", "LS47", "LS52", "LS35", "LS27", "LS50")) %>% #change with real data
+  filter(Before_wet_mass_g > 1)  #change with real data
+
+```
+
+```{r}
+ggplot(phys_char_cleaned, aes(x = Before_wet_mass_g)) +
+  geom_histogram(binwidth = 3)
+
+ggplot(phys_char_cleaned, aes(x = Before_radius_mm)) +
+  geom_histogram(binwidth = 3)
+```
+
+```{r}
+
+large_seastars <- phys_char_cleaned %>%
+  arrange(desc(Before_radius_mm)) %>%
+  head(n = 16)
+
+small_seastars <- phys_char_cleaned  %>%
+  arrange(desc(Before_radius_mm)) %>%
+  tail(n = 16)
+
+medium_seastars <- phys_char_cleaned  %>%
+  filter(!ID %in% c(large_seastars$ID, small_seastars$ID))
+
+```
+
+```{r}
+
+set.seed(98)
+large_random <- sample(large_seastars$ID, 16, replace = FALSE)
+
+set.seed(853)
+medium_random <- sample(medium_seastars$ID, 32, replace = FALSE)
+
+set.seed(54)
+small_random <- sample(small_seastars$ID, 16, replace = FALSE)
+
+```
+
+```{r}
+
+C10_fed_10meta <- c(large_random[1:2], medium_random[1:4], small_random[1:2])
+set.seed(458)
+C10_fed_10meta <- sample(C10_fed_10meta, 8, replace = FALSE)
+C10_fed_10meta_1stSamp <- C10_fed_10meta[c(1,3,5,7)]
+C10_fed_10meta_2ndSamp <- C10_fed_10meta[c(2,4,6,8)]
+
+C10_fed_15meta <- c(large_random[3:4], medium_random[5:8], small_random[3:4])
+set.seed(75)
+C10_fed_15meta <- sample(C10_fed_15meta, 8, replace = FALSE)
+C10_fed_15meta_1stSamp <- C10_fed_15meta[c(1,3,5,7)]
+C10_fed_15meta_2ndSamp <- C10_fed_15meta[c(2,4,6,8)]
+
+C10_unfed_10meta <- c(large_random[5:6], medium_random[9:12], small_random[5:6])
+set.seed(567)
+C10_unfed_10meta <- sample(C10_unfed_10meta, 8, replace = FALSE)
+C10_unfed_10meta_1stSamp <- C10_unfed_10meta[c(1,3,5,7)]
+C10_unfed_10meta_2ndSamp <- C10_unfed_10meta[c(2,4,6,8)]
+
+C10_unfed_15meta <- c(large_random[7:8], medium_random[13:16], small_random[7:8])
+set.seed(32)
+C10_unfed_15meta <- sample(C10_unfed_15meta, 8, replace = FALSE)
+C10_unfed_15meta_1stSamp <- C10_unfed_15meta[c(1,3,5,7)]
+C10_unfed_15meta_2ndSamp <- C10_unfed_15meta[c(2,4,6,8)]
+
+C15_fed_15meta  <- c(large_random[9:10], medium_random[17:20], small_random[9:10])
+set.seed(7)
+C15_fed_15meta <- sample(C15_fed_15meta, 8, replace = FALSE)
+C15_fed_15meta_1stSamp <- C15_fed_15meta[c(1,3,5,7)]
+C15_fed_15meta_2ndSamp <- C15_fed_15meta[c(2,4,6,8)]
+
+C15_fed_20meta <- c(large_random[11:12], medium_random[21:24], small_random[11:12])
+set.seed(647)
+C15_fed_20meta <- sample(C15_fed_20meta, 8, replace = FALSE)
+C15_fed_20meta_1stSamp <- C15_fed_20meta[c(1,3,5,7)]
+C15_fed_20meta_2ndSamp <- C15_fed_20meta[c(2,4,6,8)]
+
+C15_unfed_15meta <- c(large_random[13:14], medium_random[25:28], small_random[13:14])
+set.seed(29)
+C15_unfed_15meta <- sample(C15_unfed_15meta, 8, replace = FALSE)
+C15_unfed_15meta_1stSamp <- C15_unfed_15meta[c(1,3,5,7)]
+C15_unfed_15meta_2ndSamp <- C15_unfed_15meta[c(2,4,6,8)]
+
+C15_unfed_20meta <- c(large_random[15:16], medium_random[29:32], small_random[15:16])
+set.seed(875647)
+C15_unfed_20meta <- sample(C15_unfed_20meta, 8, replace = FALSE)
+C15_unfed_20meta_1stSamp <- C15_unfed_20meta[c(1,3,5,7)]
+C15_unfed_20meta_2ndSamp <- C15_unfed_20meta[c(2,4,6,8)]
+
+```
+
+```{r}
+
+sea_stars_assigned <- phys_char %>%
+  mutate(
+    Treatment_Code = case_when(
+      ID %in% C10_fed_10meta_1stSamp ~ "C10_fed_10meta_1stSamp",
+      ID %in% C10_fed_15meta_1stSamp ~ "C10_fed_15meta_1stSamp",
+      ID %in% C10_unfed_10meta_1stSamp ~ "C10_unfed_10meta_1stSamp",
+      ID %in% C10_unfed_15meta_1stSamp ~ "C10_unfed_15meta_1stSamp",
+      ID %in% C15_fed_15meta_1stSamp ~ "C15_fed_15meta_1stSamp",
+      ID %in% C15_fed_20meta_1stSamp ~ "C15_fed_20meta_1stSamp",
+      ID %in% C15_unfed_15meta_1stSamp ~ "C15_unfed_15meta_1stSamp",
+      ID %in% C15_unfed_20meta_1stSamp ~ "C15_unfed_20meta_1stSamp",
+      ID %in% C10_fed_10meta_2ndSamp ~ "C10_fed_10meta_2ndSamp",
+      ID %in% C10_fed_15meta_2ndSamp ~ "C10_fed_15meta_2ndSamp",
+      ID %in% C10_unfed_10meta_2ndSamp ~ "C10_unfed_10meta_2ndSamp",
+      ID %in% C10_unfed_15meta_2ndSamp ~ "C10_unfed_15meta_2ndSamp",
+      ID %in% C15_fed_15meta_2ndSamp ~ "C15_fed_15meta_2ndSamp",
+      ID %in% C15_fed_20meta_2ndSamp ~ "C15_fed_20meta_2ndSamp",
+      ID %in% C15_unfed_15meta_2ndSamp ~ "C15_unfed_15meta_2ndSamp",
+      ID %in% C15_unfed_20meta_2ndSamp ~ "C15_unfed_20meta_2ndSamp"
+    ),
+    Temp_Treatment = case_when(
+      ID %in% c(C10_fed_10meta, C10_fed_15meta, C10_unfed_10meta, C10_unfed_15meta) ~ "Temp_10C",
+      ID %in% c(C15_fed_15meta, C15_fed_20meta, C15_unfed_15meta, C15_unfed_20meta) ~ "Temp_15C"
+    ),
+    Food_Treatment = case_when(
+      ID %in% c(C10_fed_10meta, C10_fed_15meta, C15_fed_15meta, C15_fed_20meta) ~ "fed",
+      ID %in% c(C10_unfed_10meta, C10_unfed_15meta, C15_unfed_15meta, C15_unfed_20meta) ~ "unfed"
+    ),
+    Metabolic_Temp_Treatment = case_when(
+      ID %in% c(C10_fed_10meta, C10_unfed_10meta) ~ "Meta_10C",
+      ID %in% c(C10_fed_15meta, C10_unfed_15meta, C15_fed_15meta, C15_unfed_15meta) ~ "Meta_15C",
+      ID %in% c(C15_fed_20meta, C15_unfed_20meta) ~ "Meta_20C"
+    ),
+    Sampling_Day_Treatment = case_when(
+      ID %in% c(C10_fed_10meta_1stSamp, C10_fed_15meta_1stSamp, C10_unfed_10meta_1stSamp, 
+                C10_unfed_15meta_1stSamp, C15_fed_15meta_1stSamp, C15_fed_20meta_1stSamp, 
+                C15_unfed_15meta_1stSamp, C15_unfed_20meta_1stSamp) ~ "1st_Sampling",
+      ID %in% c(C10_fed_10meta_2ndSamp, C10_fed_15meta_2ndSamp, C10_unfed_10meta_2ndSamp, 
+                C10_unfed_15meta_2ndSamp, C15_fed_15meta_2ndSamp, C15_fed_20meta_2ndSamp, 
+                C15_unfed_15meta_2ndSamp, C15_unfed_20meta_2ndSamp) ~ "2nd_Sampling"
+    )
+    ) %>% 
+  dplyr::select(ID, Treatment_Code, Temp_Treatment, Food_Treatment,
+                Metabolic_Temp_Treatment, Sampling_Day_Treatment, Before_radius_mm,
+                Before_wet_mass_g, After_radius_mm, After_wet_mass_g, Notes)
+
+```
+
+# Treatment Assignments:
+
+C10_fed_10meta_1stSamp:
+
+```{r}
+C10_fed_10meta_1stSamp
+```
+
+C10_fed_10meta_2ndSamp:
+
+```{r}
+C10_fed_10meta_2ndSamp
+```
+
+C10_fed_15meta_1stSamp:
+
+```{r}
+C10_fed_15meta_1stSamp
+```
+
+C10_fed_15meta_2ndSamp:
+
+```{r}
+C10_fed_15meta_2ndSamp
+```
+
+C10_unfed_10meta_1stSamp:
+
+```{r}
+C10_unfed_10meta_1stSamp
+```
+
+C10_unfed_10meta_2ndSamp:
+
+```{r}
+C10_unfed_10meta_2ndSamp
+```
+
+
+C10_unfed_15meta_1stSamp:
+
+```{r}
+C10_unfed_15meta_1stSamp
+```
+
+C10_unfed_15meta_2ndSamp:
+
+```{r}
+C10_unfed_15meta_2ndSamp
+```
+
+C15_fed_15meta_1stSamp:
+
+```{r}
+C15_fed_15meta_1stSamp
+```
+
+C15_fed_15meta_2ndSamp:
+
+```{r}
+C15_fed_15meta_2ndSamp
+```
+
+
+C15_fed_20meta_1stSamp:
+
+```{r}
+C15_fed_20meta_1stSamp
+```
+
+C15_fed_20meta_2ndSamp:
+
+```{r}
+C15_fed_20meta_2ndSamp
+```
+
+C15_unfed_15meta_1stSamp:
+
+```{r}
+C15_unfed_15meta_1stSamp
+```
+
+C15_unfed_15meta_2ndSamp:
+
+```{r}
+C15_unfed_15meta_2ndSamp
+```
+
+C15_unfed_20meta_1stSamp:
+
+```{r}
+C15_unfed_20meta_1stSamp
+```
+
+C15_unfed_20meta_2ndSamp:
+
+```{r}
+C15_unfed_20meta_2ndSamp
+```
+
+
+# Creating Cleaned Data
+
+```{r, include=FALSE}
+
+write.csv(sea_stars_assigned, 
+          file = here::here("03_cleaned_data",
+                            "LS_Physical_Characteristics_wAssignments.csv"),
+          row.names = FALSE)
+```
+

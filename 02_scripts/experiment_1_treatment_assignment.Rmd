@@ -1,0 +1,574 @@
+---
+title: "Treatment Assignments"
+subtitle: "Sea Star Thermal Stressors with Hakai"
+author: '[Dominique Maucieri](https://www.dominiquemaucieri.com)'
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, include = FALSE}
+
+library(readxl)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, tidy = TRUE, message=FALSE)
+
+phys_char <- read_excel(here("01_raw_data/Experimental_Data", "SeaStar_Physical_Characteristics_27_11_2024.xlsx"))
+
+```
+
+```{r}
+ggplot(phys_char, aes(x = Initial_Radius_mm)) +
+  geom_histogram(binwidth = 1)
+```
+
+```{r}
+
+phys_char_cleaned <- phys_char %>%
+  filter(!SeaStar_ID %in% c("DI051", "DI007", "DI037", "DI109", "DI047", "DI107", "DI147", "DI095", "DI096", "DI136")) %>% #change with real data
+  filter(Initial_Radius_mm > 1)  #change with real data
+
+```
+
+```{r}
+ggplot(phys_char_cleaned, aes(x = Initial_Radius_mm)) +
+  geom_histogram(binwidth = 1)
+```
+
+```{r}
+
+large_seastars <- phys_char_cleaned %>%
+  arrange(desc(Initial_Radius_mm)) %>%
+  head(n = 42)
+
+small_seastars <- phys_char_cleaned  %>%
+  arrange(desc(Initial_Radius_mm)) %>%
+  tail(n = 42)
+
+medium_seastars <- phys_char_cleaned  %>%
+  filter(!SeaStar_ID %in% c(large_seastars$SeaStar_ID, small_seastars$SeaStar_ID))
+
+```
+
+```{r}
+
+set.seed(98)
+large_random <- sample(large_seastars$SeaStar_ID, 42, replace = FALSE)
+
+set.seed(853)
+medium_random <- sample(medium_seastars$SeaStar_ID, 56, replace = FALSE)
+
+set.seed(54)
+small_random <- sample(small_seastars$SeaStar_ID, 42, replace = FALSE)
+
+```
+
+```{r}
+afdm_baseline <- c(large_random[1:6], medium_random[1:8], small_random[1:6])
+
+high_food_all <- c(large_random[7:12], medium_random[9:16], small_random[7:12])
+set.seed(2478)
+high_food <- sample(high_food_all, 20, replace = FALSE)
+high_food_tr <- high_food[c(1,3,5,7,9,11,13,15,17,19)]
+  
+high_nofood_all <- c(large_random[13:18], medium_random[17:24], small_random[13:18])
+set.seed(34)
+high_nofood <- sample(high_nofood_all, 20, replace = FALSE)
+high_nofood_tr <- high_nofood[c(1,3,5,7,9,11,13,15,17,19)]
+  
+mid_food_all <- c(large_random[19:24], medium_random[25:32], small_random[19:24])
+set.seed(3674)
+mid_food <- sample(mid_food_all, 20, replace = FALSE)
+mid_food_tr <- mid_food[c(1,3,5,7,9,11,13,15,17,19)]
+
+mid_nofood_all <- c(large_random[25:30], medium_random[33:40], small_random[25:30])
+set.seed(43)
+mid_nofood <- sample(mid_nofood_all, 20, replace = FALSE)
+mid_nofood_tr <- mid_nofood[c(1,3,5,7,9,11,13,15,17,19)]
+
+low_food_all <- c(large_random[31:36], medium_random[41:48], small_random[31:36])
+set.seed(39)
+low_food <- sample(low_food_all, 20, replace = FALSE)
+low_food_tr <- low_food[c(1,3,5,7,9,11,13,15,17,19)]
+
+low_nofood_all <- c(large_random[37:42], medium_random[49:56], small_random[37:42])
+set.seed(845)
+low_nofood <- sample(low_nofood_all, 20, replace = FALSE)
+low_nofood_tr <- low_nofood[c(1,3,5,7,9,11,13,15,17,19)]
+```
+
+```{r}
+
+sea_stars_assigned <- phys_char_cleaned %>%
+  mutate(Heat_Treatment = case_when(
+    SeaStar_ID %in% high_food ~ "high_temp",
+    SeaStar_ID %in% high_nofood ~ "high_temp",
+    SeaStar_ID %in% mid_food ~ "mid_temp",
+    SeaStar_ID %in% mid_nofood ~ "mid_temp",
+    SeaStar_ID %in% low_food ~ "low_temp",
+    SeaStar_ID %in% low_nofood ~ "low_temp",
+    SeaStar_ID %in% afdm_baseline ~ "afdm_baseline"
+  ),
+  Food_Treatment = case_when(
+    SeaStar_ID %in% high_food ~ "fed",
+    SeaStar_ID %in% high_nofood ~ "not_fed",
+    SeaStar_ID %in% mid_food ~ "fed",
+    SeaStar_ID %in% mid_nofood ~ "not_fed",
+    SeaStar_ID %in% low_food ~ "fed",
+    SeaStar_ID %in% low_nofood ~ "not_fed",
+    SeaStar_ID %in% afdm_baseline ~ "afdm_baseline"
+  ),
+  Transcriptomics_Treatment = case_when(
+    SeaStar_ID %in% c(high_food_tr, high_nofood_tr, 
+                      mid_food_tr, mid_nofood_tr, 
+                      low_nofood_tr, low_food_tr) ~ "yes",
+    SeaStar_ID %in% afdm_baseline ~ "afdm_baseline",
+    .default = "no"
+  )) %>% 
+  dplyr::select(SeaStar_ID, Food_Treatment, Heat_Treatment, Transcriptomics_Treatment, 
+                Initial_WetWeight_g, Initial_Radius_mm, Intial_Size_Class, 
+                Initial_WetWeight_g)
+
+```
+
+# Treatment Assignments:
+
+Ash free dry mass baseline:
+
+```{r}
+afdm_baseline
+```
+
+High temp fed treatment:
+
+```{r}
+high_food
+```
+
+with transcriptomics coming from:
+
+```{r}
+high_food_tr
+```
+
+High temp **NOT** fed treatment:
+
+```{r}
+high_nofood
+```
+
+with transcriptomics coming from:
+
+```{r}
+high_nofood_tr
+```
+
+Mid temp fed treatment:
+
+```{r}
+mid_food
+```
+
+with transcriptomics coming from:
+
+```{r}
+mid_food_tr
+```
+
+Mid temp **NOT** fed treatment:
+
+```{r}
+mid_nofood
+```
+
+with transcriptomics coming from:
+
+```{r}
+mid_nofood_tr
+```
+
+Low temp fed treatment:
+
+```{r}
+low_food
+```
+
+with transcriptomics coming from:
+
+```{r}
+low_food_tr
+```
+
+Low temp **NOT** fed treatment:
+
+```{r}
+low_nofood
+```
+
+with transcriptomics coming from:
+
+```{r}
+low_nofood_tr
+```
+
+\pagebreak
+
+```{r}
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% afdm_baseline) %>%
+  kbl(caption = "Ash Free Dry Mass Baseline")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+High_R1 <- c(high_food[1:2], high_nofood[1:2])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% High_R1) %>%
+  kbl(caption = "High R1")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+High_R2 <- c(high_food[3:4], high_nofood[3:4])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% High_R2)%>%
+  kbl(caption = "High R2")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+High_R3 <- c(high_food[5:6], high_nofood[5:6])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% High_R3)%>%
+  kbl(caption = "High R3")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+High_R4 <- c(high_food[7:8], high_nofood[7:8])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% High_R4)%>%
+  kbl(caption = "High R4")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+High_R5 <- c(high_food[9:10], high_nofood[9:10])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% High_R5)%>%
+  kbl(caption = "High R5")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+High_R6 <- c(high_food[11:12], high_nofood[11:12])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% High_R6)%>%
+  kbl(caption = "High R6")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+High_R7 <- c(high_food[13:14], high_nofood[13:14])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% High_R7)%>%
+  kbl(caption = "High R7")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+High_R8 <- c(high_food[15:16], high_nofood[15:16])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% High_R8)%>%
+  kbl(caption = "High R8")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+High_R9 <- c(high_food[17:18], high_nofood[17:18])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% High_R9)%>%
+  kbl(caption = "High R9")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+High_R10 <- c(high_food[19:20], high_nofood[19:20])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% High_R10)%>%
+  kbl(caption = "High R10")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Mid_R1 <- c(mid_food[1:2], mid_nofood[1:2])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Mid_R1)%>%
+  kbl(caption = "Mid R1")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Mid_R2 <- c(mid_food[3:4], mid_nofood[3:4])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Mid_R2)%>%
+  kbl(caption = "Mid R2")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Mid_R3 <- c(mid_food[5:6], mid_nofood[5:6])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Mid_R3)%>%
+  kbl(caption = "Mid R3")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Mid_R4 <- c(mid_food[7:8], mid_nofood[7:8])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Mid_R4)%>%
+  kbl(caption = "Mid R4")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Mid_R5 <- c(mid_food[9:10], mid_nofood[9:10])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Mid_R5)%>%
+  kbl(caption = "Mid R5")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Mid_R6 <- c(mid_food[11:12], mid_nofood[11:12])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Mid_R6)%>%
+  kbl(caption = "Mid R6")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Mid_R7 <- c(mid_food[13:14], mid_nofood[13:14])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Mid_R7)%>%
+  kbl(caption = "Mid R7")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Mid_R8 <- c(mid_food[15:16], mid_nofood[15:16])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Mid_R8)%>%
+  kbl(caption = "Mid R8")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Mid_R9 <- c(mid_food[17:18], mid_nofood[17:18])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Mid_R9)%>%
+  kbl(caption = "Mid R9")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Mid_R10 <- c(mid_food[19:20], mid_nofood[19:20])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Mid_R10)%>%
+  kbl(caption = "Mid R10")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Low_R1 <- c(low_food[1:2], low_nofood[1:2])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Low_R1)%>%
+  kbl(caption = "Low R1")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Low_R2 <- c(low_food[3:4], low_nofood[3:4])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Low_R2)%>%
+  kbl(caption = "Low R2")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Low_R3 <- c(low_food[5:6], low_nofood[5:6])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Low_R3)%>%
+  kbl(caption = "Low R3")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Low_R4 <- c(low_food[7:8], low_nofood[7:8])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Low_R4)%>%
+  kbl(caption = "Low R4")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Low_R5 <- c(low_food[9:10], low_nofood[9:10])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Low_R5)%>%
+  kbl(caption = "Low R5")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Low_R6 <- c(low_food[11:12], low_nofood[11:12])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Low_R6)%>%
+  kbl(caption = "Low R6")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Low_R7 <- c(low_food[13:14], low_nofood[13:14])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Low_R7)%>%
+  kbl(caption = "Low R7")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Low_R8 <- c(low_food[15:16], low_nofood[15:16])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Low_R8)%>%
+  kbl(caption = "Low R8")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Low_R9 <- c(low_food[17:18], low_nofood[17:18])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Low_R9)%>%
+  kbl(caption = "Low R9")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+```{r}
+Low_R10 <- c(low_food[19:20], low_nofood[19:20])
+
+sea_stars_assigned %>%
+  filter(SeaStar_ID %in% Low_R10)%>%
+  kbl(caption = "Low R10")  %>%
+  kable_classic(html_font = "Cambria") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+# Creating Cleaned Data
+
+```{r, include=FALSE}
+phys_char_assigned <- phys_char %>%
+  mutate(Food_Treatment = case_when(
+    SeaStar_ID %in% high_nofood ~ "unfed",
+    SeaStar_ID %in% mid_nofood ~ "unfed",
+    SeaStar_ID %in% low_nofood ~ "unfed",
+    SeaStar_ID %in% high_food ~ "fed",
+    SeaStar_ID %in% mid_food ~ "fed",
+    SeaStar_ID %in% low_food ~ "fed",
+    SeaStar_ID %in% afdm_baseline ~ "AFDM baseline",
+    .default = NA
+  ),
+  Heat_Treatment = case_when(
+    SeaStar_ID %in% high_nofood ~ "high",
+    SeaStar_ID %in% mid_nofood ~ "mid",
+    SeaStar_ID %in% low_nofood ~ "control",
+    SeaStar_ID %in% high_food ~ "high",
+    SeaStar_ID %in% mid_food ~ "mid",
+    SeaStar_ID %in% low_food ~ "control",
+    SeaStar_ID %in% afdm_baseline ~ "AFDM baseline",
+    .default = NA
+  ),
+  Transcriptomics_Treatment = case_when(
+    SeaStar_ID %in% high_nofood_tr ~ "transcriptomics",
+    SeaStar_ID %in% mid_nofood_tr ~ "transcriptomics",
+    SeaStar_ID %in% low_nofood_tr ~ "transcriptomics",
+    SeaStar_ID %in% high_food_tr ~ "transcriptomics",
+    SeaStar_ID %in% mid_food_tr ~ "transcriptomics",
+    SeaStar_ID %in% low_food_tr ~ "transcriptomics",
+    SeaStar_ID %in% afdm_baseline ~ "AFDM baseline",
+    .default = NA
+  ))
+
+write.csv(phys_char_assigned, 
+          file = here::here("03_cleaned_data",
+                            "SeaStar_Physical_Characteristics_wAssignments.csv"),
+          row.names = FALSE)
+```
+

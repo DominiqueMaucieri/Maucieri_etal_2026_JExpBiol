@@ -1,0 +1,2221 @@
+---
+title: "Metabolic Calculations"
+subtitle: "Sea Star Metabolics at UVic"
+author: '[Dominique Maucieri](https://www.dominiquemaucieri.com)'
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Setup
+
+```{r, include = FALSE}
+
+#To clear the workspace
+rm(list = ls(all = T))
+
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, tidy = TRUE, message=FALSE)
+
+# My theme
+theme.dgm <- function () {
+  theme_classic(base_size = 12) +
+  theme(
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(colour = "black"),
+    axis.title = element_text(size = 14, face = "bold"),
+    axis.text = element_text(size = 12, face = "plain"),
+    legend.text = element_text(size = 12, face = "plain"),
+    legend.title = element_text(size = 14, face = "bold"))
+}
+
+theme.dgm.map <- function (){
+  theme_bw(base_size = 12) +
+  theme(panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(colour = "black"),
+    axis.title = element_text(size = 14, face = "bold"),
+    axis.text = element_text(size = 12, face = "plain"),
+    legend.text = element_text(size = 12, face = "plain"),
+    legend.title = element_text(size = 14, face = "bold")) 
+}
+
+#packages
+library(readxl)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(cowplot)
+library(respR)
+
+```
+
+# Clean up AFDM
+
+```{r}
+
+AFDM_raw <- read_excel(here("01_raw_data", "LS_AFDM.xlsx"))
+
+AFDM_clean <- AFDM_raw %>%
+  group_by(SeaStar_ID) %>%
+  summarize(Dry_mass_g = sum(Dry_mass_g),
+            Ash_mass_g = sum(Ash_mass_g),
+            AFDM_g = sum(AFDM_g), .groups = "drop")
+
+write.csv(AFDM_clean, here("03_cleaned_data", "AFDM_clean.csv"), row.names = FALSE)
+
+```
+
+
+```{r, include = FALSE}
+#Build data frame to hold new metabolic data
+
+meta_record <- read_excel(here("01_raw_data", "LS_Experiment_Data.xlsx"),
+                          sheet = "Meta_Assignments") %>%
+  mutate(Tank_Temp_C = as.numeric(Tank_Temp_C),
+         Meta_Temp_C = as.numeric(Meta_Temp_C),
+         ID = case_when(
+           ID == "NA" ~ NA,
+           .default = ID
+         ),
+         Food_Treatment = case_when(
+           Food_Treatment == "NA" ~ NA,
+           .default = Food_Treatment
+         ))
+
+phys_char <- read_excel(here("01_raw_data", "LS_Physical_Characteristics.xlsx")) %>%
+  mutate(V_SS_Water = as.numeric(V_SS_Water),
+         V_Water = as.numeric(V_Water),
+         V_SS = as.numeric(V_SS)) %>%
+  filter(is.na(Treatment_Code) == FALSE) %>%
+  left_join(AFDM_clean, by = join_by(ID == SeaStar_ID))
+
+meta_rates <- as.data.frame(matrix(data = NA, ncol = 11, nrow = 64)) 
+colnames(meta_rates) <- c("Seastar_ID", "Food_Treatment", "Tank_Treatment", "Meta_Treatment", 
+                          "Sampling_Day", "Salinity", "SS_Vol_ml", "SS_mass_g", "mass_spec_O2", "r_2", 
+                          "Vol_abso_O2")
+
+```
+
+
+
+
+
+
+# Inspect R1
+
+Feb 18, 15Ctank 20Cmeta
+
+
+```{r, fig.width=12, fig.height=15}
+
+Feb18_Tank15C_Meta20C_Chan1 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan1.xlsx"), sheet = "SABD0002000022, Ch 1") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta20C_Chan1_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan1, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb18_Tank15C_Meta20C_Chan2 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan2.xlsx"), sheet = "SABD0002000022, Ch 2") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta20C_Chan2_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan2, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan2")
+
+Feb18_Tank15C_Meta20C_Chan3 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan3.xlsx"), sheet = "SABD0002000022, Ch 3") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta20C_Chan3_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan3, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan3")
+
+Feb18_Tank15C_Meta20C_Chan4 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan4.xlsx"), sheet = "SABD0002000022, Ch 4") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta20C_Chan4_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan4, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan4")
+
+Feb18_Tank15C_Meta20C_Chan5 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan5.xlsx"), sheet = "SABD0002000022, Ch 5") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta20C_Chan5_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan5, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan5")
+
+Feb18_Tank15C_Meta20C_Chan6 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan6.xlsx"), sheet = "SABD0002000022, Ch 6") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta20C_Chan6_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan6, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan6")
+
+Feb18_Tank15C_Meta20C_Chan7 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan7.xlsx"), sheet = "SABD0002000022, Ch 7") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta20C_Chan7_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan7, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan7")
+
+Feb18_Tank15C_Meta20C_Chan8_From_Chan10 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan10.xlsx"), sheet = "SABD0002000022, Ch 10") %>%
+  filter(Date >= as.POSIXct("2025-02-18 13:22:29", tz="UTC"))%>%
+  select("Delta T [min]", Oxygen, Date) %>%
+  rename(DeltaT_min = "Delta T [min]")  
+
+Feb18_Tank15C_Meta20C_Chan8 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan8.xlsx"), sheet = "SABD0002000022, Ch 8") %>%
+  filter(Date < as.POSIXct("2025-02-18 13:21:29", tz="UTC")) %>%
+  select("Delta T [min]", Oxygen, Date) %>%
+  rename(DeltaT_min = "Delta T [min]")  %>%
+  rbind(., Feb18_Tank15C_Meta20C_Chan8_From_Chan10) %>%
+  mutate(DeltaT_min_raw = DeltaT_min,
+         DeltaT_min = as.numeric(Date - .$Date[1])/60)
+
+Feb18_Tank15C_Meta20C_Chan8_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan8, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan8")
+
+Feb18_Tank15C_Meta20C_Chan9 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan9.xlsx"), sheet = "SABD0002000022, Ch 9") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta20C_Chan9_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan9, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan9")
+
+Feb18_Tank15C_Meta20C_Chan10_From_Chan8 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan8.xlsx"), sheet = "SABD0002000022, Ch 8") %>%
+  filter(Date >= as.POSIXct("2025-02-18 13:23:29", tz="UTC"))%>%
+  select("Delta T [min]", Oxygen, Date) %>%
+  rename(DeltaT_min = "Delta T [min]")  
+
+Feb18_Tank15C_Meta20C_Chan10 <- read_excel(here("01_raw_data/MO2/2025_02_18/20C_R1", "20C_R1_Chan10.xlsx"), sheet = "SABD0002000022, Ch 10") %>%
+  filter(Date < as.POSIXct("2025-02-18 13:21:29", tz="UTC")) %>%
+  select("Delta T [min]", Oxygen, Date) %>%
+  rename(DeltaT_min = "Delta T [min]")  %>%
+  rbind(., Feb18_Tank15C_Meta20C_Chan10_From_Chan8) %>%
+  mutate(DeltaT_min_raw = DeltaT_min,
+         DeltaT_min = as.numeric(Date - .$Date[1])/60)
+
+Feb18_Tank15C_Meta20C_Chan10_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan10, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb18_Tank15C_Meta20C_Chan1_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan2_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan3_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan4_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan5_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan6_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan7_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan8_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan9_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan10_rawtimeseries,
+          ncol = 3)
+
+```
+
+```{r, fig.width=12, fig.height=15}
+
+Feb18_Tank15C_Meta20C_Chan1_clean <- Feb18_Tank15C_Meta20C_Chan1 %>%
+  filter((DeltaT_min > 25))
+
+Feb18_Tank15C_Meta20C_Chan1_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan1_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb18_Tank15C_Meta20C_Chan2_clean <- Feb18_Tank15C_Meta20C_Chan2 %>%
+  filter(!(DeltaT_min > 13.48 & DeltaT_min < 20.1) &
+         !(DeltaT_min > 40.8 & DeltaT_min < 42.4) &
+         !(DeltaT_min > 50.8 & DeltaT_min < 52.4) &
+          DeltaT_min < 69 )
+
+Feb18_Tank15C_Meta20C_Chan2_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan2_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan2")
+
+
+Feb18_Tank15C_Meta20C_Chan3_clean <- Feb18_Tank15C_Meta20C_Chan3 %>%
+  filter(!(DeltaT_min > 31 & DeltaT_min < 33.5) &
+         !(DeltaT_min > 36.5 & DeltaT_min < 39.7))
+
+Feb18_Tank15C_Meta20C_Chan3_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan3_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan3")
+
+Feb18_Tank15C_Meta20C_Chan4_clean <- Feb18_Tank15C_Meta20C_Chan4 %>%
+  filter((DeltaT_min > 45))
+
+Feb18_Tank15C_Meta20C_Chan4_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan4_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan4")
+
+Feb18_Tank15C_Meta20C_Chan5_clean <- Feb18_Tank15C_Meta20C_Chan5 %>%
+  filter((DeltaT_min < 44))
+
+Feb18_Tank15C_Meta20C_Chan5_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan5_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan5")
+
+Feb18_Tank15C_Meta20C_Chan6_clean <- Feb18_Tank15C_Meta20C_Chan6 
+
+Feb18_Tank15C_Meta20C_Chan6_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan6_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan6")
+
+Feb18_Tank15C_Meta20C_Chan7_clean <- Feb18_Tank15C_Meta20C_Chan7 %>%
+  filter(!(DeltaT_min > 30 & DeltaT_min < 35) &
+           DeltaT_min > 1)
+
+Feb18_Tank15C_Meta20C_Chan7_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan7_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan7")
+
+
+Feb18_Tank15C_Meta20C_Chan8_clean <- Feb18_Tank15C_Meta20C_Chan8 %>%
+  filter(!(DeltaT_min > 3.4 & DeltaT_min < 5.6) &
+         !(DeltaT_min > 8.7 & DeltaT_min < 12.6) &
+         !(DeltaT_min > 14.8 & DeltaT_min < 18.2) &
+         !(DeltaT_min > 20.7 & DeltaT_min < 23.5) &
+         !(DeltaT_min > 26.8 & DeltaT_min < 29.7) &
+         !(DeltaT_min > 33 & DeltaT_min < 36.7) &
+         !(DeltaT_min > 40.5 & DeltaT_min < 42.5) &
+         !(DeltaT_min > 48.7 & DeltaT_min < 50.8) &
+         !(DeltaT_min > 55.8 & DeltaT_min < 59) &
+         DeltaT_min < 61) %>%
+  dplyr::select(-DeltaT_min_raw, -Date)
+
+Feb18_Tank15C_Meta20C_Chan8_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan8_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan8")
+
+
+Feb18_Tank15C_Meta20C_Chan9_clean <- Feb18_Tank15C_Meta20C_Chan9 
+
+Feb18_Tank15C_Meta20C_Chan9_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan9_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan9")
+
+Feb18_Tank15C_Meta20C_Chan10_clean <- Feb18_Tank15C_Meta20C_Chan10 %>%
+  filter((DeltaT_min > 10 & DeltaT_min < 70)) %>%
+  dplyr::select(-DeltaT_min_raw, -Date)
+
+Feb18_Tank15C_Meta20C_Chan10_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta20C_Chan10_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb18_Tank15C_Meta20C_Chan1_clean_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan2_clean_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan3_clean_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan4_clean_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan5_clean_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan6_clean_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan7_clean_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan8_clean_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan9_clean_rawtimeseries,
+          Feb18_Tank15C_Meta20C_Chan10_clean_rawtimeseries,
+          ncol = 3)
+
+```
+
+
+```{r}
+
+for(i in 2:9){
+  
+  df_x <- get(paste("Feb18_Tank15C_Meta20C_Chan", i, "_clean", sep =""))
+  
+  ss_meta_notes <- meta_record %>%
+    filter(Date_Meta == as.Date("2025-02-18") &
+           Round_Meta == "R1" & 
+           Channel == paste("Ch", i, sep =""))
+  
+  phys_char_xx <- phys_char %>%
+    filter(ID == ss_meta_notes$ID)
+  
+  print(paste("Feb18_Tank15C_Meta20C_Chan", i, "_clean", sep =""))
+  print(df_x %>% inspect(., plot=TRUE))
+  
+  xx_mean_bg <- mean(c(calc_rate.bg(Feb18_Tank15C_Meta20C_Chan1_clean)$rate.bg, 
+                       calc_rate.bg(Feb18_Tank15C_Meta20C_Chan10_clean)$rate.bg))
+  
+  xx_converted_mass <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h/g", 
+                 volume = phys_char_xx$V_SS, 
+                 mass = phys_char_xx$AFDM_g, 
+                 S=30.5, 
+                 t=ss_meta_notes$Meta_Temp_C)
+  
+  
+   xx_converted_vol <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h", 
+                 volume = phys_char_xx$V_SS, 
+                 S=30.5, 
+                 t=ss_meta_notes$Meta_Temp_C)
+    
+  meta_rates$Seastar_ID[i-1] <- ss_meta_notes$ID
+  meta_rates$Food_Treatment[i-1] <- ss_meta_notes$Food_Treatment
+  meta_rates$Tank_Treatment[i-1] <- ss_meta_notes$Tank_Temp_C
+  meta_rates$Meta_Treatment[i-1] <- ss_meta_notes$Meta_Temp_C
+  meta_rates$Sampling_Day[i-1] <- phys_char_xx$Sampling_Day_Treatment
+  meta_rates$Salinity[i-1] <- 30.5
+  meta_rates$SS_Vol_ml[i-1] <- phys_char_xx$V_SS
+  meta_rates$SS_mass_g[i-1] <- phys_char_xx$AFDM_g
+  meta_rates$mass_spec_O2[i-1] <- xx_converted_mass$rate.output
+  meta_rates$r_2[i-1] <- calc_rate(df_x)$summary$rsq
+  meta_rates$Vol_abso_O2[i-1] <- xx_converted_vol$rate.output
+}
+
+```
+
+
+# Inspect R2
+
+Feb 18, 15Ctank 15Cmeta
+
+
+```{r, fig.width=12, fig.height=15}
+
+Feb18_Tank15C_Meta15C_Chan1 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R2", "15C_R2_Chan1.xlsx"), sheet = "SABD0002000022, Ch 1") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta15C_Chan1_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan1, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb18_Tank15C_Meta15C_Chan2 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R2", "15C_R2_Chan2.xlsx"), sheet = "SABD0002000022, Ch 2") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta15C_Chan2_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan2, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan2")
+
+Feb18_Tank15C_Meta15C_Chan3 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R2", "15C_R2_Chan3.xlsx"), sheet = "SABD0002000022, Ch 3") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta15C_Chan3_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan3, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan3")
+
+Feb18_Tank15C_Meta15C_Chan4 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R2", "15C_R2_Chan4.xlsx"), sheet = "SABD0002000022, Ch 4") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta15C_Chan4_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan4, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan4")
+
+Feb18_Tank15C_Meta15C_Chan5 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R2", "15C_R2_Chan5.xlsx"), sheet = "SABD0002000022, Ch 5") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta15C_Chan5_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan5, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan5")
+
+Feb18_Tank15C_Meta15C_Chan6 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R2", "15C_R2_Chan6.xlsx"), sheet = "SABD0002000022, Ch 6") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta15C_Chan6_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan6, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan6")
+
+Feb18_Tank15C_Meta15C_Chan7 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R2", "15C_R2_Chan7.xlsx"), sheet = "SABD0002000022, Ch 7") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta15C_Chan7_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan7, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan7")
+
+Feb18_Tank15C_Meta15C_Chan8 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R2", "15C_R2_Chan8.xlsx"), sheet = "SABD0002000022, Ch 8") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta15C_Chan8_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan8, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan8")
+
+Feb18_Tank15C_Meta15C_Chan9 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R2", "15C_R2_Chan9.xlsx"), sheet = "SABD0002000022, Ch 9") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta15C_Chan9_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan9, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan9")
+
+Feb18_Tank15C_Meta15C_Chan10 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R2", "15C_R2_Chan10.xlsx"), sheet = "SABD0002000022, Ch 10")  %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank15C_Meta15C_Chan10_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan10, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb18_Tank15C_Meta15C_Chan1_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan2_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan3_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan4_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan5_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan6_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan7_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan8_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan9_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan10_rawtimeseries,
+          ncol = 3)
+
+```
+
+```{r, fig.width=12, fig.height=15}
+
+Feb18_Tank15C_Meta15C_Chan1_clean <- Feb18_Tank15C_Meta15C_Chan1 %>%
+  filter((DeltaT_min > 5 & DeltaT_min < 80))
+
+Feb18_Tank15C_Meta15C_Chan1_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan1_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb18_Tank15C_Meta15C_Chan2_clean <- Feb18_Tank15C_Meta15C_Chan2 %>%
+  filter(!(DeltaT_min > 8 & DeltaT_min < 13) &
+         !(DeltaT_min > 16.5 & DeltaT_min < 23) &
+         !(DeltaT_min > 33 & DeltaT_min < 36) &
+         !(DeltaT_min > 42 & DeltaT_min < 49) &
+         !(DeltaT_min > 76 & DeltaT_min < 79) &
+         !(DeltaT_min > 89 & DeltaT_min < 93))
+
+Feb18_Tank15C_Meta15C_Chan2_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan2_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan2")
+
+
+Feb18_Tank15C_Meta15C_Chan3_clean <- Feb18_Tank15C_Meta15C_Chan3 %>%
+  filter((DeltaT_min > 10) &
+         !(DeltaT_min > 27 & DeltaT_min < 29))
+
+Feb18_Tank15C_Meta15C_Chan3_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan3_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan3")
+
+Feb18_Tank15C_Meta15C_Chan4_clean <- Feb18_Tank15C_Meta15C_Chan4 %>%
+  filter((DeltaT_min < 31) &
+         !(DeltaT_min > 3 & DeltaT_min < 4.5))
+
+Feb18_Tank15C_Meta15C_Chan4_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan4_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan4")
+
+Feb18_Tank15C_Meta15C_Chan5_clean <- Feb18_Tank15C_Meta15C_Chan5 %>%
+  filter((DeltaT_min > 1) &
+         !(DeltaT_min > 5 & DeltaT_min < 7) &
+         !(DeltaT_min > 13.5 & DeltaT_min < 17.5) &
+         !(DeltaT_min > 22.8 & DeltaT_min < 25.2) &
+         !(DeltaT_min > 31 & DeltaT_min < 35.4) &
+         !(DeltaT_min > 42.5 & DeltaT_min < 46) &
+         !(DeltaT_min > 51 & DeltaT_min < 56.5) &
+         !(DeltaT_min > 60 & DeltaT_min < 64.5))
+
+Feb18_Tank15C_Meta15C_Chan5_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan5_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan5")
+
+Feb18_Tank15C_Meta15C_Chan6_clean <- Feb18_Tank15C_Meta15C_Chan6 %>%
+  filter(!(DeltaT_min > 15 & DeltaT_min < 16.5) &
+           !(DeltaT_min > 27 & DeltaT_min < 36) &
+           !(DeltaT_min > 42 & DeltaT_min < 54) &
+           !(DeltaT_min > 68 & DeltaT_min < 73) &
+           DeltaT_min > 1)
+
+Feb18_Tank15C_Meta15C_Chan6_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan6_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan6")
+
+Feb18_Tank15C_Meta15C_Chan7_clean <- Feb18_Tank15C_Meta15C_Chan7 %>%
+  filter(DeltaT_min > 3)
+
+Feb18_Tank15C_Meta15C_Chan7_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan7_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan7")
+
+
+Feb18_Tank15C_Meta15C_Chan8_clean <- Feb18_Tank15C_Meta15C_Chan8 %>%
+  filter(!(DeltaT_min > 6.5 & DeltaT_min < 10) &
+         !(DeltaT_min > 43 & DeltaT_min < 46) &
+         !(DeltaT_min > 62 & DeltaT_min < 67.5) &
+         DeltaT_min < 71)
+
+Feb18_Tank15C_Meta15C_Chan8_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan8_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan8")
+
+
+Feb18_Tank15C_Meta15C_Chan9_clean <- Feb18_Tank15C_Meta15C_Chan9 %>%
+  filter(!(DeltaT_min > 8 & DeltaT_min < 11) &
+         !(DeltaT_min > 15.5 & DeltaT_min < 18) &
+         !(DeltaT_min > 23 & DeltaT_min < 27.5) &
+         !(DeltaT_min > 38 & DeltaT_min < 41.8) &
+         !(DeltaT_min > 46 & DeltaT_min < 49) &
+         !(DeltaT_min > 54 & DeltaT_min < 58) &
+         !(DeltaT_min > 61.5 & DeltaT_min < 64.5) &
+         !(DeltaT_min > 69 & DeltaT_min < 72) &
+         !(DeltaT_min > 76 & DeltaT_min < 78) &
+         !(DeltaT_min > 83 & DeltaT_min < 88) &
+         !(DeltaT_min > 91 & DeltaT_min < 96) &
+         DeltaT_min > 2 & DeltaT_min < 99)
+
+Feb18_Tank15C_Meta15C_Chan9_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan9_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan9")
+
+Feb18_Tank15C_Meta15C_Chan10_clean <- Feb18_Tank15C_Meta15C_Chan10 %>%
+  filter((DeltaT_min > 10 & DeltaT_min < 70))
+
+Feb18_Tank15C_Meta15C_Chan10_clean_rawtimeseries <- ggplot(Feb18_Tank15C_Meta15C_Chan10_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb18_Tank15C_Meta15C_Chan1_clean_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan2_clean_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan3_clean_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan4_clean_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan5_clean_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan6_clean_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan7_clean_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan8_clean_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan9_clean_rawtimeseries,
+          Feb18_Tank15C_Meta15C_Chan10_clean_rawtimeseries,
+          ncol = 3)
+
+```
+
+```{r}
+
+for(i in 2:9){
+  
+  df_x <- get(paste("Feb18_Tank15C_Meta15C_Chan", i, "_clean", sep =""))
+  
+  ss_meta_notes <- meta_record %>%
+    filter(Date_Meta == as.Date("2025-02-18") &
+           Round_Meta == "R2" & 
+           Channel == paste("Ch", i, sep =""))
+  
+  phys_char_xx <- phys_char %>%
+    filter(ID == ss_meta_notes$ID)
+  
+  print(paste("Feb18_Tank15C_Meta15C_Chan", i, "_clean", sep =""))
+  print(df_x %>% inspect(., plot=TRUE))
+  
+  xx_mean_bg <- mean(c(calc_rate.bg(Feb18_Tank15C_Meta15C_Chan1_clean)$rate.bg, 
+                       calc_rate.bg(Feb18_Tank15C_Meta15C_Chan10_clean)$rate.bg))
+  
+  xx_converted_mass <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h/g", 
+                 volume = phys_char_xx$V_SS, 
+                 mass = phys_char_xx$AFDM_g, 
+                 S=30.5, 
+                 t=ss_meta_notes$Meta_Temp_C)
+  
+  
+   xx_converted_vol <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h", 
+                 volume = phys_char_xx$V_SS, 
+                 S=30.2, 
+                 t=ss_meta_notes$Meta_Temp_C)
+    
+  meta_rates$Seastar_ID[i+7] <- ss_meta_notes$ID
+  meta_rates$Food_Treatment[i+7] <- ss_meta_notes$Food_Treatment
+  meta_rates$Tank_Treatment[i+7] <- ss_meta_notes$Tank_Temp_C
+  meta_rates$Meta_Treatment[i+7] <- ss_meta_notes$Meta_Temp_C
+  meta_rates$Sampling_Day[i+7] <- phys_char_xx$Sampling_Day_Treatment
+  meta_rates$Salinity[i+7] <- 30.2
+  meta_rates$SS_Vol_ml[i+7] <- phys_char_xx$V_SS
+  meta_rates$SS_mass_g[i+7] <- phys_char_xx$AFDM_g
+  meta_rates$mass_spec_O2[i+7] <- xx_converted_mass$rate.output
+  meta_rates$r_2[i+7] <- calc_rate(df_x)$summary$rsq
+  meta_rates$Vol_abso_O2[i+7] <- xx_converted_vol$rate.output
+}
+
+```
+
+# Inspect R3
+
+Feb 18, 10Ctank 15Cmeta
+
+
+```{r, fig.width=12, fig.height=15}
+
+Feb18_Tank10C_Meta15C_Chan1 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R3", "15C_R3_Chan1.xlsx"), sheet = "SABD0002000022, Ch 1") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta15C_Chan1_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan1, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb18_Tank10C_Meta15C_Chan2 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R3", "15C_R3_Chan2.xlsx"), sheet = "SABD0002000022, Ch 2") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta15C_Chan2_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan2, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan2")
+
+Feb18_Tank10C_Meta15C_Chan3 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R3", "15C_R3_Chan3.xlsx"), sheet = "SABD0002000022, Ch 3") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta15C_Chan3_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan3, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan3")
+
+Feb18_Tank10C_Meta15C_Chan4 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R3", "15C_R3_Chan4.xlsx"), sheet = "SABD0002000022, Ch 4") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta15C_Chan4_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan4, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan4")
+
+Feb18_Tank10C_Meta15C_Chan5 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R3", "15C_R3_Chan5.xlsx"), sheet = "SABD0002000022, Ch 5") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta15C_Chan5_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan5, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan5")
+
+Feb18_Tank10C_Meta15C_Chan6 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R3", "15C_R3_Chan6.xlsx"), sheet = "SABD0002000022, Ch 6") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta15C_Chan6_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan6, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan6")
+
+Feb18_Tank10C_Meta15C_Chan7 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R3", "15C_R3_Chan7.xlsx"), sheet = "SABD0002000022, Ch 7") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta15C_Chan7_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan7, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan7")
+
+Feb18_Tank10C_Meta15C_Chan8 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R3", "15C_R3_Chan8.xlsx"), sheet = "SABD0002000022, Ch 8") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta15C_Chan8_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan8, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan8")
+
+Feb18_Tank10C_Meta15C_Chan9 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R3", "15C_R3_Chan9.xlsx"), sheet = "SABD0002000022, Ch 9") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta15C_Chan9_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan9, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan9")
+
+Feb18_Tank10C_Meta15C_Chan10 <- read_excel(here("01_raw_data/MO2/2025_02_18/15C_R3", "15C_R3_Chan10.xlsx"), sheet = "SABD0002000022, Ch 10") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta15C_Chan10_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan10, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb18_Tank10C_Meta15C_Chan1_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan2_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan3_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan4_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan5_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan6_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan7_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan8_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan9_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan10_rawtimeseries,
+          ncol = 3)
+
+```
+
+```{r, fig.width=12, fig.height=15}
+
+Feb18_Tank10C_Meta15C_Chan1_clean <- Feb18_Tank10C_Meta15C_Chan1 %>%
+  filter((DeltaT_min > 5) & DeltaT_min < 69)
+
+Feb18_Tank10C_Meta15C_Chan1_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan1_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb18_Tank10C_Meta15C_Chan2_clean <- Feb18_Tank10C_Meta15C_Chan2 %>%
+  filter(!(DeltaT_min > 18.5 & DeltaT_min < 21.5) &
+         !(DeltaT_min > 50 & DeltaT_min < 52))
+
+Feb18_Tank10C_Meta15C_Chan2_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan2_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan2")
+
+
+Feb18_Tank10C_Meta15C_Chan3_clean <- Feb18_Tank10C_Meta15C_Chan3
+
+Feb18_Tank10C_Meta15C_Chan3_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan3_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan3")
+
+Feb18_Tank10C_Meta15C_Chan4_clean <- Feb18_Tank10C_Meta15C_Chan4 %>%
+  filter((DeltaT_min > 1 & DeltaT_min < 80)&
+         !(DeltaT_min > 6.5 & DeltaT_min < 10)&
+         !(DeltaT_min > 13 & DeltaT_min < 17.5)&
+         !(DeltaT_min > 19.5 & DeltaT_min < 24)&
+         !(DeltaT_min > 27 & DeltaT_min < 29.5)&
+         !(DeltaT_min > 37 & DeltaT_min < 46))
+
+Feb18_Tank10C_Meta15C_Chan4_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan4_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan4")
+
+Feb18_Tank10C_Meta15C_Chan5_clean <- Feb18_Tank10C_Meta15C_Chan5 
+
+Feb18_Tank10C_Meta15C_Chan5_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan5_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan5")
+
+Feb18_Tank10C_Meta15C_Chan6_clean <- Feb18_Tank10C_Meta15C_Chan6 %>%
+  filter(!(DeltaT_min > 62.5 & DeltaT_min < 64) &
+           DeltaT_min > 8.5)
+
+Feb18_Tank10C_Meta15C_Chan6_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan6_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan6")
+
+Feb18_Tank10C_Meta15C_Chan7_clean <- Feb18_Tank10C_Meta15C_Chan7 %>%
+  filter(DeltaT_min < 43)
+
+Feb18_Tank10C_Meta15C_Chan7_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan7_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan7")
+
+
+Feb18_Tank10C_Meta15C_Chan8_clean <- Feb18_Tank10C_Meta15C_Chan8 %>%
+  filter(DeltaT_min > 67)
+
+Feb18_Tank10C_Meta15C_Chan8_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan8_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan8")
+
+
+Feb18_Tank10C_Meta15C_Chan9_clean <- Feb18_Tank10C_Meta15C_Chan9 %>%
+  filter(DeltaT_min > 11)
+
+Feb18_Tank10C_Meta15C_Chan9_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan9_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan9")
+
+Feb18_Tank10C_Meta15C_Chan10_clean <- Feb18_Tank10C_Meta15C_Chan10 %>%
+  filter((DeltaT_min > 5 & DeltaT_min < 65))
+
+Feb18_Tank10C_Meta15C_Chan10_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta15C_Chan10_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb18_Tank10C_Meta15C_Chan1_clean_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan2_clean_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan3_clean_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan4_clean_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan5_clean_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan6_clean_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan7_clean_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan8_clean_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan9_clean_rawtimeseries,
+          Feb18_Tank10C_Meta15C_Chan10_clean_rawtimeseries,
+          ncol = 3)
+
+
+```
+
+```{r}
+
+for(i in 2:9){
+  
+  df_x <- get(paste("Feb18_Tank10C_Meta15C_Chan", i, "_clean", sep =""))
+  
+  ss_meta_notes <- meta_record %>%
+    filter(Date_Meta == as.Date("2025-02-18") &
+           Round_Meta == "R3" & 
+           Channel == paste("Ch", i, sep =""))
+  
+  phys_char_xx <- phys_char %>%
+    filter(ID == ss_meta_notes$ID)
+  
+  print(paste("Feb18_Tank10C_Meta15C_Chan", i, "_clean", sep =""))
+  print(df_x %>% inspect(., plot=TRUE))
+  
+  xx_mean_bg <- mean(c(calc_rate.bg(Feb18_Tank10C_Meta15C_Chan1_clean)$rate.bg, 
+                       calc_rate.bg(Feb18_Tank10C_Meta15C_Chan10_clean)$rate.bg))
+  
+  xx_converted_mass <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h/g", 
+                 volume = phys_char_xx$V_SS, 
+                 mass = phys_char_xx$AFDM_g, 
+                 S=30.5, 
+                 t=ss_meta_notes$Meta_Temp_C)
+  
+  
+   xx_converted_vol <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h", 
+                 volume = phys_char_xx$V_SS, 
+                 S=30.2, 
+                 t=ss_meta_notes$Meta_Temp_C)
+    
+  meta_rates$Seastar_ID[i+15] <- ss_meta_notes$ID
+  meta_rates$Food_Treatment[i+15] <- ss_meta_notes$Food_Treatment
+  meta_rates$Tank_Treatment[i+15] <- ss_meta_notes$Tank_Temp_C
+  meta_rates$Meta_Treatment[i+15] <- ss_meta_notes$Meta_Temp_C
+  meta_rates$Sampling_Day[i+15] <- phys_char_xx$Sampling_Day_Treatment
+  meta_rates$Salinity[i+15] <- 30.2
+  meta_rates$SS_Vol_ml[i+15] <- phys_char_xx$V_SS
+  meta_rates$SS_mass_g[i+15] <- phys_char_xx$AFDM_g
+  meta_rates$mass_spec_O2[i+15] <- xx_converted_mass$rate.output
+  meta_rates$r_2[i+15] <- calc_rate(df_x)$summary$rsq
+  meta_rates$Vol_abso_O2[i+15] <- xx_converted_vol$rate.output
+}
+
+```
+
+# Inspect R4
+
+Feb 18, 10Ctank 10Cmeta
+
+
+```{r, fig.width=12, fig.height=15}
+
+Feb18_Tank10C_Meta10C_Chan1 <- read_excel(here("01_raw_data/MO2/2025_02_18/10C_R4", "10C_R4_Chan1.xlsx"), sheet = "SABD0002000022, Ch 1") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta10C_Chan1_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan1, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb18_Tank10C_Meta10C_Chan2 <- read_excel(here("01_raw_data/MO2/2025_02_18/10C_R4", "10C_R4_Chan2.xlsx"), sheet = "SABD0002000022, Ch 2") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta10C_Chan2_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan2, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan2")
+
+Feb18_Tank10C_Meta10C_Chan3 <- read_excel(here("01_raw_data/MO2/2025_02_18/10C_R4", "10C_R4_Chan3.xlsx"), sheet = "SABD0002000022, Ch 3") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta10C_Chan3_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan3, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan3")
+
+Feb18_Tank10C_Meta10C_Chan4 <- read_excel(here("01_raw_data/MO2/2025_02_18/10C_R4", "10C_R4_Chan4.xlsx"), sheet = "SABD0002000022, Ch 4") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta10C_Chan4_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan4, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan4")
+
+Feb18_Tank10C_Meta10C_Chan5 <- read_excel(here("01_raw_data/MO2/2025_02_18/10C_R4", "10C_R4_Chan5.xlsx"), sheet = "SABD0002000022, Ch 5") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta10C_Chan5_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan5, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan5")
+
+Feb18_Tank10C_Meta10C_Chan6 <- read_excel(here("01_raw_data/MO2/2025_02_18/10C_R4", "10C_R4_Chan6.xlsx"), sheet = "SABD0002000022, Ch 6") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta10C_Chan6_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan6, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan6")
+
+Feb18_Tank10C_Meta10C_Chan7 <- read_excel(here("01_raw_data/MO2/2025_02_18/10C_R4", "10C_R4_Chan7.xlsx"), sheet = "SABD0002000022, Ch 7") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta10C_Chan7_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan7, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan7")
+
+Feb18_Tank10C_Meta10C_Chan8 <- read_excel(here("01_raw_data/MO2/2025_02_18/10C_R4", "10C_R4_Chan8.xlsx"), sheet = "SABD0002000022, Ch 8") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta10C_Chan8_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan8, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan8")
+
+Feb18_Tank10C_Meta10C_Chan9 <- read_excel(here("01_raw_data/MO2/2025_02_18/10C_R4", "10C_R4_Chan9.xlsx"), sheet = "SABD0002000022, Ch 9") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta10C_Chan9_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan9, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan9")
+
+Feb18_Tank10C_Meta10C_Chan10 <- read_excel(here("01_raw_data/MO2/2025_02_18/10C_R4", "10C_R4_Chan10.xlsx"), sheet = "SABD0002000022, Ch 10") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb18_Tank10C_Meta10C_Chan10_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan10, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb18_Tank10C_Meta10C_Chan1_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan2_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan3_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan4_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan5_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan6_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan7_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan8_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan9_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan10_rawtimeseries,
+          ncol = 3)
+
+```
+
+```{r, fig.width=12, fig.height=15}
+
+Feb18_Tank10C_Meta10C_Chan1_clean <- Feb18_Tank10C_Meta10C_Chan1 %>%
+  filter((DeltaT_min > 20) )
+
+Feb18_Tank10C_Meta10C_Chan1_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan1_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb18_Tank10C_Meta10C_Chan2_clean <- Feb18_Tank10C_Meta10C_Chan2 %>%
+  filter(!(DeltaT_min > 17 & DeltaT_min < 22.5) &
+         !(DeltaT_min > 33 & DeltaT_min < 35.5) &
+         !(DeltaT_min > 43 & DeltaT_min < 47) &
+         !(DeltaT_min > 52 & DeltaT_min < 55) &
+         !(DeltaT_min > 68 & DeltaT_min < 70))
+
+Feb18_Tank10C_Meta10C_Chan2_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan2_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan2")
+
+
+Feb18_Tank10C_Meta10C_Chan3_clean <- Feb18_Tank10C_Meta10C_Chan3 %>%
+  filter(DeltaT_min > 2)
+
+Feb18_Tank10C_Meta10C_Chan3_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan3_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan3")
+
+Feb18_Tank10C_Meta10C_Chan4_clean <- Feb18_Tank10C_Meta10C_Chan4 
+
+Feb18_Tank10C_Meta10C_Chan4_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan4_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan4")
+
+Feb18_Tank10C_Meta10C_Chan5_clean <- Feb18_Tank10C_Meta10C_Chan5 %>%
+  filter((DeltaT_min > 1) &
+         !(DeltaT_min > 48 & DeltaT_min < 58) )
+
+Feb18_Tank10C_Meta10C_Chan5_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan5_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan5")
+
+Feb18_Tank10C_Meta10C_Chan6_clean <- Feb18_Tank10C_Meta10C_Chan6 %>%
+  filter(DeltaT_min > 24)
+
+Feb18_Tank10C_Meta10C_Chan6_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan6_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan6")
+
+Feb18_Tank10C_Meta10C_Chan7_clean <- Feb18_Tank10C_Meta10C_Chan7 %>%
+  filter(!(DeltaT_min > 20 & DeltaT_min < 24) &
+           !(DeltaT_min > 28 & DeltaT_min < 34) &
+           !(DeltaT_min > 39 & DeltaT_min < 42.5) &
+           !(DeltaT_min > 61 & DeltaT_min < 63.5) &
+           !(DeltaT_min > 77 & DeltaT_min < 82) &
+           DeltaT_min > 2)
+
+Feb18_Tank10C_Meta10C_Chan7_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan7_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan7")
+
+
+Feb18_Tank10C_Meta10C_Chan8_clean <- Feb18_Tank10C_Meta10C_Chan8 %>%
+  filter(DeltaT_min > 1)
+
+Feb18_Tank10C_Meta10C_Chan8_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan8_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan8")
+
+
+Feb18_Tank10C_Meta10C_Chan9_clean <- Feb18_Tank10C_Meta10C_Chan9 %>%
+  filter(!(DeltaT_min > 16 & DeltaT_min < 24) &
+           DeltaT_min < 42)
+
+Feb18_Tank10C_Meta10C_Chan9_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan9_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan9")
+
+Feb18_Tank10C_Meta10C_Chan10_clean <- Feb18_Tank10C_Meta10C_Chan10 %>%
+  filter((DeltaT_min > 20))
+
+Feb18_Tank10C_Meta10C_Chan10_clean_rawtimeseries <- ggplot(Feb18_Tank10C_Meta10C_Chan10_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb18_Tank10C_Meta10C_Chan1_clean_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan2_clean_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan3_clean_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan4_clean_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan5_clean_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan6_clean_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan7_clean_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan8_clean_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan9_clean_rawtimeseries,
+          Feb18_Tank10C_Meta10C_Chan10_clean_rawtimeseries,
+          ncol = 3)
+
+
+```
+
+```{r}
+
+for(i in 2:9){
+  
+  df_x <- get(paste("Feb18_Tank10C_Meta10C_Chan", i, "_clean", sep =""))
+  
+  ss_meta_notes <- meta_record %>%
+    filter(Date_Meta == as.Date("2025-02-18") &
+           Round_Meta == "R4" & 
+           Channel == paste("Ch", i, sep =""))
+  
+  phys_char_xx <- phys_char %>%
+    filter(ID == ss_meta_notes$ID)
+  
+  print(paste("Feb18_Tank10C_Meta10C_Chan", i, "_clean", sep =""))
+  print(df_x %>% inspect(., plot=TRUE))
+  
+  xx_mean_bg <- mean(c(calc_rate.bg(Feb18_Tank10C_Meta10C_Chan1_clean)$rate.bg, 
+                       calc_rate.bg(Feb18_Tank10C_Meta10C_Chan10_clean)$rate.bg))
+  
+  xx_converted_mass <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h/g", 
+                 volume = phys_char_xx$V_SS, 
+                 mass = phys_char_xx$AFDM_g, 
+                 S=30.5, 
+                 t=ss_meta_notes$Meta_Temp_C)
+  
+  
+   xx_converted_vol <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h", 
+                 volume = phys_char_xx$V_SS, 
+                 S=30.2, 
+                 t=ss_meta_notes$Meta_Temp_C)
+    
+  meta_rates$Seastar_ID[i+23] <- ss_meta_notes$ID
+  meta_rates$Food_Treatment[i+23] <- ss_meta_notes$Food_Treatment
+  meta_rates$Tank_Treatment[i+23] <- ss_meta_notes$Tank_Temp_C
+  meta_rates$Meta_Treatment[i+23] <- ss_meta_notes$Meta_Temp_C
+  meta_rates$Sampling_Day[i+23] <- phys_char_xx$Sampling_Day_Treatment
+  meta_rates$Salinity[i+23] <- 30.2
+  meta_rates$SS_Vol_ml[i+23] <- phys_char_xx$V_SS
+  meta_rates$SS_mass_g[i+23] <- phys_char_xx$AFDM_g
+  meta_rates$mass_spec_O2[i+23] <- xx_converted_mass$rate.output
+  meta_rates$r_2[i+23] <- calc_rate(df_x)$summary$rsq
+  meta_rates$Vol_abso_O2[i+23] <- xx_converted_vol$rate.output
+}
+
+```
+# Inspect R5
+
+Feb 19, 15Ctank 20Cmeta
+
+
+```{r, fig.width=12, fig.height=15}
+
+Feb19_Tank15C_Meta20C_Chan1 <- read_excel(here("01_raw_data/MO2/2025_02_19/20C_R5", "20C_R5_Chan1.xlsx"), sheet = "SABD0002000022, Ch 1") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta20C_Chan1_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan1, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb19_Tank15C_Meta20C_Chan2 <- read_excel(here("01_raw_data/MO2/2025_02_19/20C_R5", "20C_R5_Chan2.xlsx"), sheet = "SABD0002000022, Ch 2") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta20C_Chan2_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan2, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan2")
+
+Feb19_Tank15C_Meta20C_Chan3 <- read_excel(here("01_raw_data/MO2/2025_02_19/20C_R5", "20C_R5_Chan3.xlsx"), sheet = "SABD0002000022, Ch 3") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta20C_Chan3_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan3, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan3")
+
+Feb19_Tank15C_Meta20C_Chan4 <- read_excel(here("01_raw_data/MO2/2025_02_19/20C_R5", "20C_R5_Chan4.xlsx"), sheet = "SABD0002000022, Ch 4") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta20C_Chan4_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan4, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan4")
+
+Feb19_Tank15C_Meta20C_Chan5 <- read_excel(here("01_raw_data/MO2/2025_02_19/20C_R5", "20C_R5_Chan5.xlsx"), sheet = "SABD0002000022, Ch 5") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta20C_Chan5_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan5, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan5")
+
+Feb19_Tank15C_Meta20C_Chan6 <- read_excel(here("01_raw_data/MO2/2025_02_19/20C_R5", "20C_R5_Chan6.xlsx"), sheet = "SABD0002000022, Ch 6") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta20C_Chan6_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan6, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan6")
+
+Feb19_Tank15C_Meta20C_Chan7 <- read_excel(here("01_raw_data/MO2/2025_02_19/20C_R5", "20C_R5_Chan7.xlsx"), sheet = "SABD0002000022, Ch 7") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta20C_Chan7_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan7, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan7")
+
+Feb19_Tank15C_Meta20C_Chan8 <- read_excel(here("01_raw_data/MO2/2025_02_19/20C_R5", "20C_R5_Chan8.xlsx"), sheet = "SABD0002000022, Ch 8")  %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+
+Feb19_Tank15C_Meta20C_Chan8_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan8, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan8")
+
+Feb19_Tank15C_Meta20C_Chan9 <- read_excel(here("01_raw_data/MO2/2025_02_19/20C_R5", "20C_R5_Chan9.xlsx"), sheet = "SABD0002000022, Ch 9") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta20C_Chan9_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan9, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan9")
+
+
+Feb19_Tank15C_Meta20C_Chan10 <- read_excel(here("01_raw_data/MO2/2025_02_19/20C_R5", "20C_R5_Chan10.xlsx"), sheet = "SABD0002000022, Ch 10")  %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta20C_Chan10_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan10, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb19_Tank15C_Meta20C_Chan1_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan2_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan3_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan4_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan5_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan6_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan7_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan8_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan9_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan10_rawtimeseries,
+          ncol = 3)
+
+```
+
+
+```{r, fig.width=12, fig.height=15}
+
+Feb19_Tank15C_Meta20C_Chan1_clean <- Feb19_Tank15C_Meta20C_Chan1 
+
+Feb19_Tank15C_Meta20C_Chan1_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan1_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb19_Tank15C_Meta20C_Chan2_clean <- Feb19_Tank15C_Meta20C_Chan2 %>%
+  filter(DeltaT_min > 2)
+
+Feb19_Tank15C_Meta20C_Chan2_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan2_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan2")
+
+
+Feb19_Tank15C_Meta20C_Chan3_clean <- Feb19_Tank15C_Meta20C_Chan3 %>%
+  filter(DeltaT_min > 1)
+
+Feb19_Tank15C_Meta20C_Chan3_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan3_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan3")
+
+Feb19_Tank15C_Meta20C_Chan4_clean <- Feb19_Tank15C_Meta20C_Chan4 %>%
+  filter(DeltaT_min <23)
+
+Feb19_Tank15C_Meta20C_Chan4_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan4_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan4")
+
+Feb19_Tank15C_Meta20C_Chan5_clean <- Feb19_Tank15C_Meta20C_Chan5 %>%
+  filter((DeltaT_min > 3) &
+         !(DeltaT_min > 12 & DeltaT_min < 19) )
+
+Feb19_Tank15C_Meta20C_Chan5_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan5_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan5")
+
+Feb19_Tank15C_Meta20C_Chan6_clean <- Feb19_Tank15C_Meta20C_Chan6 %>%
+  filter(DeltaT_min > 2)
+
+Feb19_Tank15C_Meta20C_Chan6_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan6_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan6")
+
+Feb19_Tank15C_Meta20C_Chan7_clean <- Feb19_Tank15C_Meta20C_Chan7 %>%
+  filter(!(DeltaT_min > 34 & DeltaT_min < 37) &
+           DeltaT_min > 5, DeltaT_min <40)
+
+Feb19_Tank15C_Meta20C_Chan7_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan7_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan7")
+
+
+Feb19_Tank15C_Meta20C_Chan8_clean <- Feb19_Tank15C_Meta20C_Chan8 %>%
+  filter(!(DeltaT_min > 29.5 & DeltaT_min < 31))
+
+Feb19_Tank15C_Meta20C_Chan8_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan8_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan8")
+
+
+Feb19_Tank15C_Meta20C_Chan9_clean <- Feb19_Tank15C_Meta20C_Chan9 %>%
+  filter(!(DeltaT_min > 5.5 & DeltaT_min < 7.5) &
+         !(DeltaT_min > 10 & DeltaT_min < 13.5) &
+         !(DeltaT_min > 19.5 & DeltaT_min < 23) &
+         !(DeltaT_min > 29.5 & DeltaT_min < 33))
+
+Feb19_Tank15C_Meta20C_Chan9_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan9_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan9")
+
+Feb19_Tank15C_Meta20C_Chan10_clean <- Feb19_Tank15C_Meta20C_Chan10 %>%
+  filter((DeltaT_min > 5))
+
+Feb19_Tank15C_Meta20C_Chan10_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta20C_Chan10_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb19_Tank15C_Meta20C_Chan1_clean_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan2_clean_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan3_clean_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan4_clean_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan5_clean_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan6_clean_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan7_clean_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan8_clean_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan9_clean_rawtimeseries,
+          Feb19_Tank15C_Meta20C_Chan10_clean_rawtimeseries,
+          ncol = 3)
+
+
+```
+
+
+```{r}
+
+for(i in 2:9){
+  
+  df_x <- get(paste("Feb19_Tank15C_Meta20C_Chan", i, "_clean", sep =""))
+  
+  ss_meta_notes <- meta_record %>%
+    filter(Date_Meta == as.Date("2025-02-19") &
+           Round_Meta == "R5" & 
+           Channel == paste("Ch", i, sep =""))
+  
+  phys_char_xx <- phys_char %>%
+    filter(ID == ss_meta_notes$ID)
+  
+  print(paste("Feb19_Tank15C_Meta20C_Chan", i, "_clean", sep =""))
+  print(df_x %>% inspect(., plot=TRUE))
+  
+  xx_mean_bg <- mean(c(calc_rate.bg(Feb19_Tank15C_Meta20C_Chan1_clean)$rate.bg, 
+                       calc_rate.bg(Feb19_Tank15C_Meta20C_Chan10_clean)$rate.bg))
+  
+  xx_converted_mass <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h/g", 
+                 volume = phys_char_xx$V_SS, 
+                 mass = phys_char_xx$AFDM_g, 
+                 S=30.5, 
+                 t=ss_meta_notes$Meta_Temp_C)
+  
+  
+   xx_converted_vol <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h", 
+                 volume = phys_char_xx$V_SS, 
+                 S=30.2, 
+                 t=ss_meta_notes$Meta_Temp_C)
+    
+  meta_rates$Seastar_ID[i+31] <- ss_meta_notes$ID
+  meta_rates$Food_Treatment[i+31] <- ss_meta_notes$Food_Treatment
+  meta_rates$Tank_Treatment[i+31] <- ss_meta_notes$Tank_Temp_C
+  meta_rates$Meta_Treatment[i+31] <- ss_meta_notes$Meta_Temp_C
+  meta_rates$Sampling_Day[i+31] <- phys_char_xx$Sampling_Day_Treatment
+  meta_rates$Salinity[i+31] <- 30.2
+  meta_rates$SS_Vol_ml[i+31] <- phys_char_xx$V_SS
+  meta_rates$SS_mass_g[i+31] <- phys_char_xx$AFDM_g
+  meta_rates$mass_spec_O2[i+31] <- xx_converted_mass$rate.output
+  meta_rates$r_2[i+31] <- calc_rate(df_x)$summary$rsq
+  meta_rates$Vol_abso_O2[i+31] <- xx_converted_vol$rate.output
+}
+
+```
+
+# Inspect R6
+
+Feb 19, 15Ctank 15Cmeta
+
+
+```{r, fig.width=12, fig.height=15}
+
+Feb19_Tank15C_Meta15C_Chan1 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R6", "15C_R6_Chan1.xlsx"), sheet = "SABD0002000022, Ch 1") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta15C_Chan1_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan1, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb19_Tank15C_Meta15C_Chan2 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R6", "15C_R6_Chan2.xlsx"), sheet = "SABD0002000022, Ch 2") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta15C_Chan2_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan2, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan2")
+
+Feb19_Tank15C_Meta15C_Chan3 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R6", "15C_R6_Chan3.xlsx"), sheet = "SABD0002000022, Ch 3") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta15C_Chan3_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan3, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan3")
+
+Feb19_Tank15C_Meta15C_Chan4 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R6", "15C_R6_Chan4.xlsx"), sheet = "SABD0002000022, Ch 4") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta15C_Chan4_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan4, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan4")
+
+Feb19_Tank15C_Meta15C_Chan5 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R6", "15C_R6_Chan5.xlsx"), sheet = "SABD0002000022, Ch 5") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta15C_Chan5_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan5, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan5")
+
+Feb19_Tank15C_Meta15C_Chan6 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R6", "15C_R6_Chan6.xlsx"), sheet = "SABD0002000022, Ch 6") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta15C_Chan6_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan6, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan6")
+
+Feb19_Tank15C_Meta15C_Chan7 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R6", "15C_R6_Chan7.xlsx"), sheet = "SABD0002000022, Ch 7") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta15C_Chan7_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan7, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan7")
+
+Feb19_Tank15C_Meta15C_Chan8 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R6", "15C_R6_Chan8.xlsx"), sheet = "SABD0002000022, Ch 8") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta15C_Chan8_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan8, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan8")
+
+Feb19_Tank15C_Meta15C_Chan9 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R6", "15C_R6_Chan9.xlsx"), sheet = "SABD0002000022, Ch 9") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta15C_Chan9_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan9, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan9")
+
+Feb19_Tank15C_Meta15C_Chan10 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R6", "15C_R6_Chan10.xlsx"), sheet = "SABD0002000022, Ch 10")  %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank15C_Meta15C_Chan10_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan10, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb19_Tank15C_Meta15C_Chan1_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan2_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan3_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan4_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan5_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan6_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan7_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan8_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan9_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan10_rawtimeseries,
+          ncol = 3)
+
+```
+
+```{r, fig.width=12, fig.height=15}
+
+Feb19_Tank15C_Meta15C_Chan1_clean <- Feb19_Tank15C_Meta15C_Chan1 %>%
+  filter(DeltaT_min > 0.5)
+
+Feb19_Tank15C_Meta15C_Chan1_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan1_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb19_Tank15C_Meta15C_Chan2_clean <- Feb19_Tank15C_Meta15C_Chan2 %>%
+  filter(!(DeltaT_min > 45 & DeltaT_min < 72) )
+
+Feb19_Tank15C_Meta15C_Chan2_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan2_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan2")
+
+
+Feb19_Tank15C_Meta15C_Chan3_clean <- Feb19_Tank15C_Meta15C_Chan3 %>%
+  filter(DeltaT_min > 12 &
+         !(DeltaT_min > 20 & DeltaT_min < 37))
+
+Feb19_Tank15C_Meta15C_Chan3_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan3_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan3")
+
+Feb19_Tank15C_Meta15C_Chan4_clean <- Feb19_Tank15C_Meta15C_Chan4 %>%
+  filter(DeltaT_min > 6)
+
+Feb19_Tank15C_Meta15C_Chan4_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan4_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan4")
+
+Feb19_Tank15C_Meta15C_Chan5_clean <- Feb19_Tank15C_Meta15C_Chan5 %>%
+  filter((DeltaT_min > 5) &
+         !(DeltaT_min > 13 & DeltaT_min < 16.5) )
+
+Feb19_Tank15C_Meta15C_Chan5_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan5_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan5")
+
+Feb19_Tank15C_Meta15C_Chan6_clean <- Feb19_Tank15C_Meta15C_Chan6 %>%
+  filter(DeltaT_min < 63 &
+         !(DeltaT_min > 16 & DeltaT_min < 36.5) &
+         !(DeltaT_min > 43 & DeltaT_min < 47) &
+         !(DeltaT_min > 49 & DeltaT_min < 51) &
+         !(DeltaT_min > 53 & DeltaT_min < 56) &
+         !(DeltaT_min > 58 & DeltaT_min < 61) )
+
+Feb19_Tank15C_Meta15C_Chan6_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan6_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan6")
+
+Feb19_Tank15C_Meta15C_Chan7_clean <- Feb19_Tank15C_Meta15C_Chan7 %>%
+  filter(!(DeltaT_min > 3 & DeltaT_min < 5) &
+         !(DeltaT_min > 44 & DeltaT_min < 46) &
+         !(DeltaT_min > 53 & DeltaT_min < 56) )
+
+Feb19_Tank15C_Meta15C_Chan7_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan7_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan7")
+
+
+Feb19_Tank15C_Meta15C_Chan8_clean <- Feb19_Tank15C_Meta15C_Chan8 %>%
+  filter(DeltaT_min > 1)
+
+Feb19_Tank15C_Meta15C_Chan8_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan8_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan8")
+
+
+Feb19_Tank15C_Meta15C_Chan9_clean <- Feb19_Tank15C_Meta15C_Chan9 %>%
+  filter(DeltaT_min > 5)
+
+Feb19_Tank15C_Meta15C_Chan9_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan9_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan9")
+
+Feb19_Tank15C_Meta15C_Chan10_clean <- Feb19_Tank15C_Meta15C_Chan10 %>%
+  filter((DeltaT_min > 5))
+
+Feb19_Tank15C_Meta15C_Chan10_clean_rawtimeseries <- ggplot(Feb19_Tank15C_Meta15C_Chan10_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb19_Tank15C_Meta15C_Chan1_clean_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan2_clean_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan3_clean_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan4_clean_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan5_clean_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan6_clean_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan7_clean_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan8_clean_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan9_clean_rawtimeseries,
+          Feb19_Tank15C_Meta15C_Chan10_clean_rawtimeseries,
+          ncol = 3)
+
+
+```
+
+```{r}
+
+for(i in 2:9){
+  
+  df_x <- get(paste("Feb19_Tank15C_Meta15C_Chan", i, "_clean", sep =""))
+  
+  ss_meta_notes <- meta_record %>%
+    filter(Date_Meta == as.Date("2025-02-19") &
+           Round_Meta == "R6" & 
+           Channel == paste("Ch", i, sep =""))
+  
+  phys_char_xx <- phys_char %>%
+    filter(ID == ss_meta_notes$ID)
+  
+  print(paste("Feb19_Tank15C_Meta15C_Chan", i, "_clean", sep =""))
+  print(df_x %>% inspect(., plot=TRUE))
+  
+  xx_mean_bg <- mean(c(calc_rate.bg(Feb19_Tank15C_Meta15C_Chan1_clean)$rate.bg, 
+                       calc_rate.bg(Feb19_Tank15C_Meta15C_Chan10_clean)$rate.bg))
+  
+  xx_converted_mass <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h/g", 
+                 volume = phys_char_xx$V_SS, 
+                 mass = phys_char_xx$AFDM_g, 
+                 S=30.5, 
+                 t=ss_meta_notes$Meta_Temp_C)
+  
+  
+   xx_converted_vol <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h", 
+                 volume = phys_char_xx$V_SS, 
+                 S=30.2, 
+                 t=ss_meta_notes$Meta_Temp_C)
+    
+  meta_rates$Seastar_ID[i+39] <- ss_meta_notes$ID
+  meta_rates$Food_Treatment[i+39] <- ss_meta_notes$Food_Treatment
+  meta_rates$Tank_Treatment[i+39] <- ss_meta_notes$Tank_Temp_C
+  meta_rates$Meta_Treatment[i+39] <- ss_meta_notes$Meta_Temp_C
+  meta_rates$Sampling_Day[i+39] <- phys_char_xx$Sampling_Day_Treatment
+  meta_rates$Salinity[i+39] <- 30.2
+  meta_rates$SS_Vol_ml[i+39] <- phys_char_xx$V_SS
+  meta_rates$SS_mass_g[i+39] <- phys_char_xx$AFDM_g
+  meta_rates$mass_spec_O2[i+39] <- xx_converted_mass$rate.output
+  meta_rates$r_2[i+39] <- calc_rate(df_x)$summary$rsq
+  meta_rates$Vol_abso_O2[i+39] <- xx_converted_vol$rate.output
+}
+
+```
+
+
+# Inspect R7
+
+Feb 19, 10Ctank 15Cmeta
+
+
+```{r, fig.width=12, fig.height=15}
+
+Feb19_Tank10C_Meta15C_Chan1 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R7", "15C_R7_Chan1.xlsx"), sheet = "SABD0002000022, Ch 1") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta15C_Chan1_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan1, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb19_Tank10C_Meta15C_Chan2 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R7", "15C_R7_Chan2.xlsx"), sheet = "SABD0002000022, Ch 2") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta15C_Chan2_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan2, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan2")
+
+Feb19_Tank10C_Meta15C_Chan3 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R7", "15C_R7_Chan3.xlsx"), sheet = "SABD0002000022, Ch 3") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta15C_Chan3_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan3, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan3")
+
+Feb19_Tank10C_Meta15C_Chan4 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R7", "15C_R7_Chan4.xlsx"), sheet = "SABD0002000022, Ch 4") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta15C_Chan4_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan4, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan4")
+
+Feb19_Tank10C_Meta15C_Chan5 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R7", "15C_R7_Chan5.xlsx"), sheet = "SABD0002000022, Ch 5") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta15C_Chan5_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan5, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan5")
+
+Feb19_Tank10C_Meta15C_Chan6 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R7", "15C_R7_Chan6.xlsx"), sheet = "SABD0002000022, Ch 6") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta15C_Chan6_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan6, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan6")
+
+Feb19_Tank10C_Meta15C_Chan7 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R7", "15C_R7_Chan7.xlsx"), sheet = "SABD0002000022, Ch 7") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta15C_Chan7_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan7, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan7")
+
+Feb19_Tank10C_Meta15C_Chan8 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R7", "15C_R7_Chan8.xlsx"), sheet = "SABD0002000022, Ch 8") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta15C_Chan8_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan8, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan8")
+
+Feb19_Tank10C_Meta15C_Chan9 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R7", "15C_R7_Chan9.xlsx"), sheet = "SABD0002000022, Ch 9") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta15C_Chan9_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan9, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan9")
+
+Feb19_Tank10C_Meta15C_Chan10 <- read_excel(here("01_raw_data/MO2/2025_02_19/15C_R7", "15C_R7_Chan10.xlsx"), sheet = "SABD0002000022, Ch 10") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta15C_Chan10_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan10, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb19_Tank10C_Meta15C_Chan1_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan2_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan3_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan4_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan5_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan6_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan7_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan8_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan9_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan10_rawtimeseries,
+          ncol = 3)
+
+```
+
+```{r, fig.width=12, fig.height=15}
+
+Feb19_Tank10C_Meta15C_Chan1_clean <- Feb19_Tank10C_Meta15C_Chan1 %>%
+  filter(DeltaT_min > 2)
+
+Feb19_Tank10C_Meta15C_Chan1_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan1_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb19_Tank10C_Meta15C_Chan2_clean <- Feb19_Tank10C_Meta15C_Chan2 %>%
+  filter(DeltaT_min > 10 &
+         !(DeltaT_min > 20.5 & DeltaT_min < 23.5) &
+         !(DeltaT_min > 76 & DeltaT_min < 79))
+
+Feb19_Tank10C_Meta15C_Chan2_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan2_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan2")
+
+
+Feb19_Tank10C_Meta15C_Chan3_clean <- Feb19_Tank10C_Meta15C_Chan3 %>%
+  filter(DeltaT_min > 1 &
+         !(DeltaT_min > 22 & DeltaT_min < 24.5))
+
+Feb19_Tank10C_Meta15C_Chan3_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan3_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan3")
+
+Feb19_Tank10C_Meta15C_Chan4_clean <- Feb19_Tank10C_Meta15C_Chan4 %>%
+  filter(DeltaT_min > 1&
+         !(DeltaT_min > 36 & DeltaT_min < 42))
+
+Feb19_Tank10C_Meta15C_Chan4_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan4_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan4")
+
+Feb19_Tank10C_Meta15C_Chan5_clean <- Feb19_Tank10C_Meta15C_Chan5 %>%
+  filter((DeltaT_min > 1) &
+         !(DeltaT_min > 24 & DeltaT_min < 26.5) )
+
+Feb19_Tank10C_Meta15C_Chan5_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan5_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan5")
+
+Feb19_Tank10C_Meta15C_Chan6_clean <- Feb19_Tank10C_Meta15C_Chan6 %>%
+  filter(DeltaT_min < 66)
+
+Feb19_Tank10C_Meta15C_Chan6_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan6_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan6")
+
+Feb19_Tank10C_Meta15C_Chan7_clean <- Feb19_Tank10C_Meta15C_Chan7 %>%
+  filter(DeltaT_min > 1 )
+
+Feb19_Tank10C_Meta15C_Chan7_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan7_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan7")
+
+
+Feb19_Tank10C_Meta15C_Chan8_clean <- Feb19_Tank10C_Meta15C_Chan8 %>%
+  filter(DeltaT_min > 1 & DeltaT_min < 36 &
+         !(DeltaT_min > 5.5 & DeltaT_min < 12.5) &
+         !(DeltaT_min > 22.5 & DeltaT_min < 29) )
+
+Feb19_Tank10C_Meta15C_Chan8_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan8_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan8")
+
+
+Feb19_Tank10C_Meta15C_Chan9_clean <- Feb19_Tank10C_Meta15C_Chan9 %>%
+  filter(DeltaT_min > 1)
+
+Feb19_Tank10C_Meta15C_Chan9_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan9_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan9")
+
+Feb19_Tank10C_Meta15C_Chan10_clean <- Feb19_Tank10C_Meta15C_Chan10
+
+Feb19_Tank10C_Meta15C_Chan10_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta15C_Chan10_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb19_Tank10C_Meta15C_Chan1_clean_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan2_clean_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan3_clean_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan4_clean_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan5_clean_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan6_clean_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan7_clean_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan8_clean_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan9_clean_rawtimeseries,
+          Feb19_Tank10C_Meta15C_Chan10_clean_rawtimeseries,
+          ncol = 3)
+
+
+```
+
+
+```{r}
+
+for(i in 2:9){
+  
+  df_x <- get(paste("Feb19_Tank10C_Meta15C_Chan", i, "_clean", sep =""))
+  
+  ss_meta_notes <- meta_record %>%
+    filter(Date_Meta == as.Date("2025-02-19") &
+           Round_Meta == "R7" & 
+           Channel == paste("Ch", i, sep =""))
+  
+  phys_char_xx <- phys_char %>%
+    filter(ID == ss_meta_notes$ID)
+  
+  print(paste("Feb19_Tank10C_Meta15C_Chan", i, "_clean", sep =""))
+  print(df_x %>% inspect(., plot=TRUE))
+  
+  xx_mean_bg <- mean(c(calc_rate.bg(Feb19_Tank10C_Meta15C_Chan1_clean)$rate.bg, 
+                       calc_rate.bg(Feb19_Tank10C_Meta15C_Chan10_clean)$rate.bg))
+  
+  xx_converted_mass <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h/g", 
+                 volume = phys_char_xx$V_SS, 
+                 mass = phys_char_xx$AFDM_g, 
+                 S=30.5, 
+                 t=ss_meta_notes$Meta_Temp_C)
+  
+  
+   xx_converted_vol <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h", 
+                 volume = phys_char_xx$V_SS, 
+                 S=30.2, 
+                 t=ss_meta_notes$Meta_Temp_C)
+    
+  meta_rates$Seastar_ID[i+47] <- ss_meta_notes$ID
+  meta_rates$Food_Treatment[i+47] <- ss_meta_notes$Food_Treatment
+  meta_rates$Tank_Treatment[i+47] <- ss_meta_notes$Tank_Temp_C
+  meta_rates$Meta_Treatment[i+47] <- ss_meta_notes$Meta_Temp_C
+  meta_rates$Sampling_Day[i+47] <- phys_char_xx$Sampling_Day_Treatment
+  meta_rates$Salinity[i+47] <- 30.2
+  meta_rates$SS_Vol_ml[i+47] <- phys_char_xx$V_SS
+  meta_rates$SS_mass_g[i+47] <- phys_char_xx$AFDM_g
+  meta_rates$mass_spec_O2[i+47] <- xx_converted_mass$rate.output
+  meta_rates$r_2[i+47] <- calc_rate(df_x)$summary$rsq
+  meta_rates$Vol_abso_O2[i+47] <- xx_converted_vol$rate.output
+}
+
+```
+
+# Inspect R8
+
+Feb 19, 10Ctank 10Cmeta
+
+
+```{r, fig.width=12, fig.height=15}
+
+Feb19_Tank10C_Meta10C_Chan1 <- read_excel(here("01_raw_data/MO2/2025_02_19/10C_R8", "10C_R8_Chan1.xlsx"), sheet = "SABD0002000022, Ch 1") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta10C_Chan1_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan1, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb19_Tank10C_Meta10C_Chan2 <- read_excel(here("01_raw_data/MO2/2025_02_19/10C_R8", "10C_R8_Chan2.xlsx"), sheet = "SABD0002000022, Ch 2") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta10C_Chan2_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan2, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan2")
+
+Feb19_Tank10C_Meta10C_Chan3 <- read_excel(here("01_raw_data/MO2/2025_02_19/10C_R8", "10C_R8_Chan3.xlsx"), sheet = "SABD0002000022, Ch 3") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta10C_Chan3_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan3, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan3")
+
+Feb19_Tank10C_Meta10C_Chan4 <- read_excel(here("01_raw_data/MO2/2025_02_19/10C_R8", "10C_R8_Chan4.xlsx"), sheet = "SABD0002000022, Ch 4") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta10C_Chan4_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan4, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan4")
+
+Feb19_Tank10C_Meta10C_Chan5 <- read_excel(here("01_raw_data/MO2/2025_02_19/10C_R8", "10C_R8_Chan5.xlsx"), sheet = "SABD0002000022, Ch 5") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta10C_Chan5_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan5, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan5")
+
+Feb19_Tank10C_Meta10C_Chan6 <- read_excel(here("01_raw_data/MO2/2025_02_19/10C_R8", "10C_R8_Chan6.xlsx"), sheet = "SABD0002000022, Ch 6") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta10C_Chan6_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan6, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan6")
+
+Feb19_Tank10C_Meta10C_Chan7 <- read_excel(here("01_raw_data/MO2/2025_02_19/10C_R8", "10C_R8_Chan7.xlsx"), sheet = "SABD0002000022, Ch 7") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta10C_Chan7_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan7, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan7")
+
+Feb19_Tank10C_Meta10C_Chan8 <- read_excel(here("01_raw_data/MO2/2025_02_19/10C_R8", "10C_R8_Chan8.xlsx"), sheet = "SABD0002000022, Ch 8") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta10C_Chan8_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan8, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan8")
+
+Feb19_Tank10C_Meta10C_Chan9 <- read_excel(here("01_raw_data/MO2/2025_02_19/10C_R8", "10C_R8_Chan9.xlsx"), sheet = "SABD0002000022, Ch 9") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta10C_Chan9_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan9, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan9")
+
+Feb19_Tank10C_Meta10C_Chan10 <- read_excel(here("01_raw_data/MO2/2025_02_19/10C_R8", "10C_R8_Chan10.xlsx"), sheet = "SABD0002000022, Ch 10") %>%
+  select("Delta T [min]", Oxygen) %>%
+  rename(DeltaT_min = "Delta T [min]")
+
+Feb19_Tank10C_Meta10C_Chan10_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan10, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb19_Tank10C_Meta10C_Chan1_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan2_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan3_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan4_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan5_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan6_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan7_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan8_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan9_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan10_rawtimeseries,
+          ncol = 3)
+
+```
+
+
+
+```{r, fig.width=12, fig.height=15}
+
+Feb19_Tank10C_Meta10C_Chan1_clean <- Feb19_Tank10C_Meta10C_Chan1 %>%
+  filter(DeltaT_min > 10)
+
+Feb19_Tank10C_Meta10C_Chan1_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan1_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_line() + 
+  labs(title = "Chan1")
+
+Feb19_Tank10C_Meta10C_Chan2_clean <- Feb19_Tank10C_Meta10C_Chan2 %>%
+  filter(DeltaT_min > 1 & DeltaT_min < 79 &
+         !(DeltaT_min > 45 & DeltaT_min < 48.5))
+
+Feb19_Tank10C_Meta10C_Chan2_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan2_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan2")
+
+
+Feb19_Tank10C_Meta10C_Chan3_clean <- Feb19_Tank10C_Meta10C_Chan3 %>%
+  filter(DeltaT_min > 3 &
+         !(DeltaT_min > 7 & DeltaT_min < 12) &
+         !(DeltaT_min > 15 & DeltaT_min < 20)&
+         !(DeltaT_min > 25 & DeltaT_min < 30))
+
+Feb19_Tank10C_Meta10C_Chan3_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan3_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan3")
+
+Feb19_Tank10C_Meta10C_Chan4_clean <- Feb19_Tank10C_Meta10C_Chan4 
+
+Feb19_Tank10C_Meta10C_Chan4_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan4_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan4")
+
+Feb19_Tank10C_Meta10C_Chan5_clean <- Feb19_Tank10C_Meta10C_Chan5 %>%
+  filter((DeltaT_min > 2) )
+
+Feb19_Tank10C_Meta10C_Chan5_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan5_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan5")
+
+Feb19_Tank10C_Meta10C_Chan6_clean <- Feb19_Tank10C_Meta10C_Chan6 %>%
+  filter(DeltaT_min > 2)
+
+Feb19_Tank10C_Meta10C_Chan6_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan6_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan6")
+
+Feb19_Tank10C_Meta10C_Chan7_clean <- Feb19_Tank10C_Meta10C_Chan7 %>%
+  filter(DeltaT_min > 32 & DeltaT_min < 72 &
+         !(DeltaT_min > 40 & DeltaT_min < 41)&
+         !(DeltaT_min > 50.5 & DeltaT_min < 54)&
+         !(DeltaT_min > 64 & DeltaT_min < 67))
+
+Feb19_Tank10C_Meta10C_Chan7_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan7_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan7")
+
+
+Feb19_Tank10C_Meta10C_Chan8_clean <- Feb19_Tank10C_Meta10C_Chan8 %>%
+  filter(DeltaT_min > 1 & DeltaT_min < 50 &
+         !(DeltaT_min > 5 & DeltaT_min < 12) &
+         !(DeltaT_min > 19.5 & DeltaT_min < 23) &
+         !(DeltaT_min > 36 & DeltaT_min < 44))
+
+Feb19_Tank10C_Meta10C_Chan8_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan8_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan8")
+
+
+Feb19_Tank10C_Meta10C_Chan9_clean <- Feb19_Tank10C_Meta10C_Chan9 %>%
+  filter(DeltaT_min > 10)
+
+Feb19_Tank10C_Meta10C_Chan9_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan9_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan9")
+
+Feb19_Tank10C_Meta10C_Chan10_clean <- Feb19_Tank10C_Meta10C_Chan10 %>%
+  filter(DeltaT_min > 10)
+
+Feb19_Tank10C_Meta10C_Chan10_clean_rawtimeseries <- ggplot(Feb19_Tank10C_Meta10C_Chan10_clean, aes( x= DeltaT_min, y = Oxygen)) + 
+  geom_point() + 
+  labs(title = "Chan10")
+
+plot_grid(Feb19_Tank10C_Meta10C_Chan1_clean_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan2_clean_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan3_clean_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan4_clean_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan5_clean_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan6_clean_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan7_clean_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan8_clean_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan9_clean_rawtimeseries,
+          Feb19_Tank10C_Meta10C_Chan10_clean_rawtimeseries,
+          ncol = 3)
+
+
+```
+
+
+```{r}
+
+for(i in 2:9){
+  
+  df_x <- get(paste("Feb19_Tank10C_Meta10C_Chan", i, "_clean", sep =""))
+  
+  ss_meta_notes <- meta_record %>%
+    filter(Date_Meta == as.Date("2025-02-19") &
+           Round_Meta == "R8" & 
+           Channel == paste("Ch", i, sep =""))
+  
+  phys_char_xx <- phys_char %>%
+    filter(ID == ss_meta_notes$ID)
+  
+  print(paste("Feb19_Tank10C_Meta10C_Chan", i, "_clean", sep =""))
+  print(df_x %>% inspect(., plot=TRUE))
+  
+  xx_mean_bg <- mean(c(calc_rate.bg(Feb19_Tank10C_Meta10C_Chan1_clean)$rate.bg, 
+                       calc_rate.bg(Feb19_Tank10C_Meta10C_Chan10_clean)$rate.bg))
+  
+  xx_converted_mass <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h/g", 
+                 volume = phys_char_xx$V_SS, 
+                 mass = phys_char_xx$AFDM_g, 
+                 S=30.5, 
+                 t=ss_meta_notes$Meta_Temp_C)
+  
+  
+   xx_converted_vol <- df_x %>%                                                     
+    calc_rate() %>%
+    adjust_rate(xx_mean_bg) %>%
+    convert_rate(oxy.unit = "%Air", 
+                 time.unit = "m",     
+                 output.unit = "ml/h", 
+                 volume = phys_char_xx$V_SS, 
+                 S=30.2, 
+                 t=ss_meta_notes$Meta_Temp_C)
+    
+  meta_rates$Seastar_ID[i+55] <- ss_meta_notes$ID
+  meta_rates$Food_Treatment[i+55] <- ss_meta_notes$Food_Treatment
+  meta_rates$Tank_Treatment[i+55] <- ss_meta_notes$Tank_Temp_C
+  meta_rates$Meta_Treatment[i+55] <- ss_meta_notes$Meta_Temp_C
+  meta_rates$Sampling_Day[i+55] <- phys_char_xx$Sampling_Day_Treatment
+  meta_rates$Salinity[i+55] <- 30.2
+  meta_rates$SS_Vol_ml[i+55] <- phys_char_xx$V_SS
+  meta_rates$SS_mass_g[i+55] <- phys_char_xx$AFDM_g
+  meta_rates$mass_spec_O2[i+55] <- xx_converted_mass$rate.output
+  meta_rates$r_2[i+55] <- calc_rate(df_x)$summary$rsq
+  meta_rates$Vol_abso_O2[i+55] <- xx_converted_vol$rate.output
+}
+
+```
+
+
+
+#Export Data Frame  
+
+
+```{r}
+write.csv(meta_rates, here("03_cleaned_data", "metabolic_rates.csv"), row.names = FALSE)
+```
+
+
