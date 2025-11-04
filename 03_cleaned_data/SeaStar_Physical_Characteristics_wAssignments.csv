@@ -1,0 +1,151 @@
+"SeaStar_ID","Food_Treatment","Heat_Treatment","Transcriptomics_Treatment","Initial_WetWeight_g","Initial_Radius_mm","Intial_Size_Class","Initial_Weight_Class","Mesocosm_Number","HeatTreatment_Replicate","Final_WetWeight_g","Final_Radius_mm","Final_Size_Class","Final_Weight_Class","Notes"
+"DI001","fed","mid","transcriptomics",159.5,73,"Medium","Large","33.0","Mid",169.19,77,"Large","Large","TF sampled"
+"DI002","fed","mid","transcriptomics",135.25,77,"Large","Medium","8.0","Mid",169.19,78.5,"Large","Large",NA
+"DI003","unfed","mid",NA,203.78,86.5,"Large","Large","8.0","Mid",189.9,84,"Large","Large",NA
+"DI004","unfed","high","transcriptomics",158.52,64.5,"Small","Large","28.0","High",109.32,76,"Large","Medium",NA
+"DI005","unfed","high","transcriptomics",141.96,70,"Medium","Large","20.0","High",109.22,74,"Large","Medium",NA
+"DI006","fed","high","transcriptomics",143.21,74,"Large","Large","23.0","High",115.8,76.5,"Large","Medium","TF sampled"
+"DI007",NA,NA,NA,118.48,70,"Medium","Medium","sea table","NA",138.99,75.5,"Large","Large",NA
+"DI008","unfed","high",NA,96.96,67,"Medium","Small","12.0","High",100.5,67.5,"Medium","Small",NA
+"DI009","unfed","high",NA,88.63,65,"Small","Small","28.0","High",76.34,65.5,"Small","Small",NA
+"DI010","fed","control",NA,145.19,76,"Large","Large","21.0","Low",161.35,74.5,"Large","Large",NA
+"DI011","fed","control",NA,78.14,50.5,"Small","Small","24.0","Low",94.41,66.5,"Medium","Small","had a barnacle but it brushed off"
+"DI012","unfed","control","transcriptomics",104.77,64,"Small","Medium","34.0","Low",85.55,65.5,"Small","Small",NA
+"DI013","unfed","control",NA,150.58,75.5,"Large","Large","30.0","Low",127.54,74,"Large","Medium",NA
+"DI014","unfed","high",NA,106.62,73.5,"Medium","Medium","14.0","High",136.37,70.5,"Medium","Large",NA
+"DI015","fed","high",NA,85.81,63.5,"Small","Small","14.0","High",94.28,65.5,"Small","Small",NA
+"DI016","fed","control",NA,162.56,73,"Medium","Large","31.0","Low",140.18,79,"Large","Large",NA
+"DI017","unfed","mid",NA,102.63,63,"Small","Small","19.0","Mid",95.03,81.5,"Large","Small",NA
+"DI018","unfed","control",NA,132.18,70.5,"Medium","Medium","31.0","Low",136.31,77.5,"Large","Large",NA
+"DI019","fed","control","transcriptomics",131.83,74.5,"Large","Medium","3.0","Low",81.02,59.5,"Small","Small","TF sampled"
+"DI020","AFDM baseline","AFDM baseline","AFDM baseline",154.61,67,"Medium","Large","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI021","fed","control","transcriptomics",136.29,72.5,"Medium","Large","18.0","Low",147.24,82,"Large","Large",NA
+"DI022","fed","mid",NA,135.15,72.5,"Medium","Medium","33.0","Mid",150.81,75.5,"Large","Large",NA
+"DI023","unfed","high","transcriptomics",129.41,73.5,"Medium","Medium","12.0","High",111.75,73.5,"Medium","Medium",NA
+"DI024","fed","high","transcriptomics",142.11,79,"Large","Large","17.0","High",125.81,63.5,"Small","Medium","TF sampled"
+"DI025","unfed","control",NA,88.31,59,"Small","Small","25.0","Low",84.3,66,"Medium","Small",NA
+"DI026","fed","high",NA,135.76,80,"Large","Medium","12.0","High",172.57,71,"Medium","Large",NA
+"DI027","fed","mid","transcriptomics",88.65,63,"Small","Small","26.0","Mid",94.05,69,"Medium","Small","TF sampled"
+"DI028","unfed","control","transcriptomics",99.02,61.5,"Small","Small","18.0","Low",89.54,62,"Small","Small",NA
+"DI029","fed","mid","transcriptomics",197.68,74,"Large","Large","36.0","Mid",218.48,81.5,"Large","Large","TF sampled"
+"DI030","fed","mid","transcriptomics",186.54,72.5,"Medium","Large","15.0","Mid",165.78,79,"Large","Large",NA
+"DI031","unfed","mid","transcriptomics",92.65,66.5,"Medium","Small","19.0","Mid",102.59,70,"Medium","Small","Parasite?"
+"DI032","unfed","high","transcriptomics",95.2,68,"Medium","Small","17.0","High",83.12,71,"Medium","Small","TF sampled"
+"DI033","fed","mid",NA,184.43,77.5,"Large","Large","9.0","Mid",212.15,88.5,"Large","Large",NA
+"DI034","AFDM baseline","AFDM baseline","AFDM baseline",134.44,74.5,"Large","Medium","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI035","unfed","high","transcriptomics",91.17,67,"Medium","Small","35.0","High",97.66,66.5,"Medium","Small","TF sampled"
+"DI036","fed","high",NA,127.16,73.5,"Medium","Medium","6.0","High",157.28,74,"Large","Large",NA
+"DI037",NA,NA,NA,89.39,67,"Medium","Small","sea table","NA",111.84,71.5,"Medium","Medium","bubble blemish"
+"DI038","AFDM baseline","AFDM baseline","AFDM baseline",88.61,69.5,"Medium","Small","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI039","unfed","mid",NA,66.57,67.5,"Medium","Small","32.0","Mid",90.84,60.5,"Small","Small",NA
+"DI040","unfed","control",NA,140.72,70,"Medium","Large","3.0","Low",148.03,79,"Large","Large",NA
+"DI041","fed","control",NA,144.36,76,"Large","Large","34.0","Low",186.96,86.5,"Large","Large",NA
+"DI042","fed","high",NA,93.29,65.5,"Small","Small","35.0","High",127.44,73.5,"Medium","Medium","TF sampled"
+"DI043","unfed","mid","transcriptomics",158.55,79.5,"Large","Large","32.0","Mid",141.11,74,"Large","Large",NA
+"DI044","AFDM baseline","AFDM baseline","AFDM baseline",149.37,79,"Large","Large","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI045","fed","control",NA,83.1,59,"Small","Small","3.0","Low",174.22,77.5,"Large","Large",NA
+"DI046","fed","control","transcriptomics",173.34,85.5,"Large","Large","34.0","Low",156.9,81.5,"Large","Large","TF sampled"
+"DI047",NA,NA,NA,82.58,63,"Small","Small","sea table","NA",100.21,67,"Medium","Small",NA
+"DI048","unfed","control","transcriptomics",136.5,67.5,"Medium","Large","30.0","Low",134.36,71,"Medium","Medium",NA
+"DI049","unfed","mid",NA,163.03,85.5,"Large","Large","33.0","Mid",159.24,76,"Large","Large",NA
+"DI050","fed","control","transcriptomics",140.2,57,"Small","Large","24.0","Low",127.11,63,"Small","Medium","TF sampled"
+"DI051",NA,NA,NA,69.83,64,"Small","Small","sea table","NA",100.31,67.5,"Medium","Small","Blemish"
+"DI052","fed","high",NA,174.8,80.5,"Large","Large","13.0","High",189.65,84,"Large","Large",NA
+"DI053","fed","mid",NA,117.05,65.5,"Small","Medium","27.0","Mid",133.42,69,"Medium","Medium",NA
+"DI054","AFDM baseline","AFDM baseline","AFDM baseline",130.9,64.5,"Small","Medium","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI055","unfed","high","transcriptomics",106.59,75,"Large","Medium","6.0","High",107.85,67.5,"Medium","Medium",NA
+"DI056","AFDM baseline","AFDM baseline","AFDM baseline",128.88,71,"Medium","Medium","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI057","fed","control","transcriptomics",90.01,71,"Medium","Small","21.0","Low",107.31,59,"Small","Medium","TF sampled"
+"DI058","unfed","mid",NA,209.13,74,"Large","Large","9.0","Mid",210.71,90,"Large","Large",NA
+"DI059","fed","mid",NA,191.02,84.5,"Large","Large","8.0","Mid",210.66,89,"Large","Large",NA
+"DI060","AFDM baseline","AFDM baseline","AFDM baseline",184.08,83,"Large","Large","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI061","AFDM baseline","AFDM baseline","AFDM baseline",86.21,60,"Small","Small","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI062","AFDM baseline","AFDM baseline","AFDM baseline",111.35,67.5,"Medium","Medium","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI063","fed","high","transcriptomics",140.05,79.5,"Large","Large","20.0","High",135.31,79.5,"Large","Medium","TF sampled"
+"DI064","unfed","control","transcriptomics",179.77,81.5,"Large","Large","25.0","Low",158.72,84.5,"Large","Large",NA
+"DI065","unfed","control","transcriptomics",89.84,73,"Medium","Small","4.0","Low",98.09,66,"Medium","Small",NA
+"DI066","unfed","mid","transcriptomics",125.26,67,"Medium","Medium","27.0","Mid",130.42,82.5,"Large","Medium",NA
+"DI067","unfed","high","transcriptomics",151.88,80,"Large","Large","14.0","High",137.25,77.5,"Large","Large",NA
+"DI068","unfed","high","transcriptomics",64.47,48,"Small","Small","23.0","High",65.3,60.5,"Small","Small",NA
+"DI069","AFDM baseline","AFDM baseline","AFDM baseline",139.03,76.5,"Large","Large","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI070","unfed","high","transcriptomics",119.04,78,"Large","Medium","13.0","High",158.91,77.5,"Large","Large",NA
+"DI071","fed","control",NA,79.05,65.5,"Small","Small","18.0","Low",116.55,71.5,"Medium","Medium",NA
+"DI072","fed","control","transcriptomics",106.01,74.5,"Large","Medium","4.0","Low",138.2,73.5,"Medium","Large","TF sampled"
+"DI073","unfed","mid","transcriptomics",113.31,56.5,"Small","Medium","36.0","Mid",129.56,70.5,"Medium","Medium","TF sampled"
+"DI074","fed","high",NA,135.36,75,"Large","Medium","28.0","High",142.46,65,"Small","Large",NA
+"DI075","fed","high",NA,109.28,62,"Small","Medium","20.0","High",120.3,64,"Small","Medium",NA
+"DI076","fed","high",NA,132.85,71.5,"Medium","Medium","17.0","High",108.09,71,"Medium","Medium","TF sampled"
+"DI077","fed","high","transcriptomics",83.16,65,"Small","Small","6.0","High",87.77,64,"Small","Small","TF sampled"
+"DI078","unfed","control",NA,133.56,62,"Small","Medium","24.0","Low",119.24,71.5,"Medium","Medium",NA
+"DI079","unfed","mid","transcriptomics",134.94,79,"Large","Medium","8.0","Mid",112.29,79.5,"Large","Medium",NA
+"DI080","unfed","mid","transcriptomics",120.61,75,"Large","Medium","9.0","Mid",122.92,75,"Large","Medium",NA
+"DI081","fed","high","transcriptomics",88.45,63.5,"Small","Small","29.0","High",77.02,64,"Small","Small","TF sampled"
+"DI082","fed","mid",NA,119.26,60.5,"Small","Medium","26.0","Mid",113.46,70,"Medium","Medium",NA
+"DI083","fed","control","transcriptomics",142.33,72,"Medium","Large","7.0","Low",149.35,81.5,"Large","Large",NA
+"DI084","fed","high",NA,116.52,66,"Medium","Medium","29.0","High",NA,NA,"Small","Small",NA
+"DI085","AFDM baseline","AFDM baseline","AFDM baseline",123.55,63,"Small","Medium","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI086","unfed","mid","transcriptomics",135.53,72.5,"Medium","Medium","5.0","Mid",128.6,80.5,"Large","Medium",NA
+"DI087","AFDM baseline","AFDM baseline","AFDM baseline",102.03,70,"Medium","Small","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI088","fed","control",NA,242.2,79,"Large","Large","30.0","Low",263.66,90.5,"Large","Large",NA
+"DI089","unfed","control","transcriptomics",160.68,88,"Large","Large","7.0","Low",156.76,78,"Large","Large",NA
+"DI090","unfed","control",NA,149.99,74,"Large","Large","4.0","Low",134.38,83,"Large","Medium",NA
+"DI091","unfed","high",NA,134.6,81,"Large","Medium","17.0","High",137.2,80.5,"Large","Large","TF sampled"
+"DI092","fed","mid",NA,136.9,75.5,"Large","Large","32.0","Mid",146.23,77.5,"Large","Large",NA
+"DI093","unfed","control",NA,85.97,68,"Medium","Small","7.0","Low",98.9,79,"Large","Small",NA
+"DI094","fed","high","transcriptomics",196.57,80.5,"Large","Large","35.0","High",177.59,82,"Large","Large","TF sampled"
+"DI095",NA,NA,NA,145.25,62,"Small","Large","sea table","NA",150.6,79,"Large","Large",NA
+"DI096",NA,NA,NA,77.19,56,"Small","Small","sea table","NA",81.99,56.5,"Small","Small",NA
+"DI097","unfed","control","transcriptomics",143.89,78,"Large","Large","24.0","Low",108.66,67.5,"Medium","Medium",NA
+"DI098","fed","mid",NA,141.08,82,"Large","Large","36.0","Mid",162.46,76,"Large","Large","TF sampled"
+"DI099","unfed","high",NA,212.25,82.5,"Large","Large","35.0","High",NA,NA,"Small","Small",NA
+"DI100","AFDM baseline","AFDM baseline","AFDM baseline",169.68,76,"Large","Large","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI101","unfed","high","transcriptomics",131.45,80,"Large","Medium","29.0","High",148.48,65.5,"Small","Large",NA
+"DI102","fed","control","transcriptomics",147.79,76.5,"Large","Large","30.0","Low",136.49,69.5,"Medium","Large","TF sampled"
+"DI103","fed","mid",NA,147.21,71.5,"Medium","Large","5.0","Mid",161.24,62,"Small","Large",NA
+"DI104","unfed","high",NA,147.08,71.5,"Medium","Large","6.0","High",126.25,70.5,"Medium","Medium",NA
+"DI105","unfed","control","transcriptomics",141.72,67,"Medium","Large","31.0","Low",134,77.5,"Large","Medium",NA
+"DI106","AFDM baseline","AFDM baseline","AFDM baseline",81.42,60,"Small","Small","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI107",NA,NA,NA,80.91,65,"Small","Small","sea table","NA",139.28,66,"Medium","Large",NA
+"DI108","fed","mid","transcriptomics",99.43,67.5,"Medium","Small","27.0","Mid",117.4,73,"Medium","Medium","TF sampled"
+"DI109",NA,NA,NA,49.71,46,"Small","Small","sea table","NA",68.38,55.5,"Small","Small",NA
+"DI110","AFDM baseline","AFDM baseline","AFDM baseline",80.31,59,"Small","Small","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI111","unfed","high",NA,108.81,65.5,"Small","Medium","29.0","High",98.47,66.5,"Medium","Small",NA
+"DI112","unfed","high",NA,125.57,70.5,"Medium","Medium","23.0","High",132.96,67.5,"Medium","Medium",NA
+"DI113","unfed","mid","transcriptomics",115.16,64.5,"Small","Medium","26.0","Mid",106.92,68,"Medium","Medium",NA
+"DI114","fed","high","transcriptomics",89.7,62,"Small","Small","13.0","High",NA,NA,"Small","Small",NA
+"DI115","fed","control",NA,89.77,66,"Medium","Small","25.0","Low",118.09,72.5,"Medium","Medium",NA
+"DI116","fed","high","transcriptomics",84.47,64,"Small","Small","28.0","High",84.64,54,"Small","Small","TF sampled"
+"DI117","fed","mid","transcriptomics",90.1,58,"Small","Small","32.0","Mid",74.57,60.5,"Small","Small","TF sampled"
+"DI118","fed","mid",NA,109.33,61.5,"Small","Medium","15.0","Mid",128.21,78,"Large","Medium",NA
+"DI119","unfed","high",NA,102.66,63,"Small","Medium","20.0","High",80.46,67.5,"Medium","Small",NA
+"DI120","unfed","mid",NA,134.9,69,"Medium","Medium","27.0","Mid",147.48,68,"Medium","Large",NA
+"DI121","fed","high","transcriptomics",118.9,70,"Medium","Medium","12.0","MHigh",117.44,66.5,"Medium","Medium","TF sampled"
+"DI122","fed","high",NA,157.03,66.5,"Medium","Large","23.0","High",178.36,79.9,"Large","Large",NA
+"DI123","unfed","mid","transcriptomics",97.37,63.5,"Small","Small","33.0","Mid",81.95,65,"Small","Small",NA
+"DI124","unfed","control",NA,135.67,75.5,"Large","Medium","34.0","Low",138.65,73,"Medium","Large",NA
+"DI125","fed","mid","transcriptomics",88.94,66.5,"Medium","Small","19.0","Mid",90.82,70,"Medium","Small","TF sampled"
+"DI126","AFDM baseline","AFDM baseline","AFDM baseline",74.99,60,"Small","Small","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI127","unfed","mid",NA,112.24,61,"Small","Medium","36.0","Mid",120.95,67.5,"Medium","Medium",NA
+"DI128","AFDM baseline","AFDM baseline","AFDM baseline",131.42,75.5,"Large","Medium","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI129","fed","control","transcriptomics",182.72,81,"Large","Large","31.0","Low",178.4,80.5,"Large","Large","TF sampled"
+"DI130","unfed","high",NA,104.93,64.5,"Small","Medium","13.0","High",118.12,72.5,"Medium","Medium",NA
+"DI131","AFDM baseline","AFDM baseline","AFDM baseline",130.16,75.5,"Large","Medium","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI132","AFDM baseline","AFDM baseline","AFDM baseline",92.65,67.5,"Medium","Small","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI133","unfed","control","transcriptomics",124.11,81,"Large","Medium","3.0","Low",145.15,71.5,"Medium","Large",NA
+"DI134","unfed","mid",NA,144.5,80,"Large","Large","26.0","Mid",166.34,83,"Large","Large",NA
+"DI135","unfed","control",NA,94.34,69,"Medium","Small","21.0","Low",102.16,74.5,"Large","Small",NA
+"DI136",NA,NA,NA,126.5,77.5,"Large","Medium","sea table","NA",160.01,83.5,"Large","Large",NA
+"DI137","fed","high","transcriptomics",209.01,74,"Large","Large","14.0","High",NA,NA,"Small","Small",NA
+"DI138","unfed","control",NA,104.66,65,"Small","Medium","18.0","Low",93.33,78,"Large","Small",NA
+"DI139","fed","mid","transcriptomics",135.88,61.5,"Small","Medium","5.0","Mid",156.67,81,"Large","Large","TF sampled"
+"DI140","unfed","mid","transcriptomics",74.9,62,"Small","Small","15.0","Mid",76.56,67,"Medium","Small",NA
+"DI141","fed","control",NA,111.54,67,"Medium","Medium","7.0","Low",127.47,66,"Medium","Medium",NA
+"DI142","fed","mid",NA,88.37,62,"Small","Small","19.0","Mid",128.51,77.5,"Large","Medium",NA
+"DI143","AFDM baseline","AFDM baseline","AFDM baseline",97.66,68,"Medium","Small","AFDM baseline","NA",NA,NA,"Small","Small",NA
+"DI144","unfed","control","transcriptomics",80.33,58,"Small","Small","21.0","Low",84.4,63,"Small","Small",NA
+"DI145","unfed","mid",NA,119.73,68,"Medium","Medium","5.0","Mid",120.02,80.5,"Large","Medium",NA
+"DI146","fed","control","transcriptomics",91.65,59,"Small","Small","25.0","Low",112.67,71,"Medium","Medium","TF sampled"
+"DI147",NA,NA,NA,101.9,71.5,"Medium","Small","sea table","NA",101.44,68,"Medium","Small",NA
+"DI148","fed","control",NA,100,63.5,"Small","Small","4.0","Low",130.63,67,"Medium","Medium",NA
+"DI149","unfed","mid",NA,90.27,70,"Medium","Small","15.0","Mid",100,72.5,"Medium","Small",NA
+"DI150","fed","mid","transcriptomics",167.24,76.5,"Large","Large","9.0","Mid",181.71,71.5,"Medium","Large","TF sampled"
