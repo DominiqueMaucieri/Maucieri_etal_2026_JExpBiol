@@ -1070,9 +1070,9 @@ right_gam_mod_ests <- as.data.frame(summary(right_gam_oneinter)$p.table) %>%
     term == "Food_TreatmentNo access\nto food:Heat_Treatment20°C\nMid" ~ "No access\nto food:\n20°C - Mid",
     term == "Food_TreatmentNo access\nto food:Heat_Treatment25°C\nHigh" ~ "No access\nto food:\n25°C - High",
     term == "scale(AFDM_Total_g)" ~ "AFDM",
-    term == "scale(Timepoint_cont)" ~ "Experimental Day"
+    term == "scale(Timepoint_cont)" ~ "Exposure Day"
     ),
-    term = factor(term, levels = c("Experimental Day",
+    term = factor(term, levels = c("Exposure Day",
                                    "AFDM", 
                                    "No access\nto food:\n25°C - High",
                                    "No access\nto food:\n20°C - Mid",
@@ -1411,7 +1411,7 @@ Change_Cytes <- Cytes_cleaner %>%
   scale_alpha_manual(values = c(1, 0.5)) +
   labs(alpha = "Access to\nFood", y = "Change in Coelomocyte Counts From Baseline\n", 
        fill = "Aquaria\nTemperature\nTreatment",
-       x = "\nExperiment Day") +
+       x = "\nExposure Day") +
   theme(legend.position = "right") +
   guides(alpha = guide_legend(override.aes = list(fill = "darkgrey"))))
 
@@ -1521,20 +1521,20 @@ CI_cytes_change_best_mod <- tidy(cytes_change_best_mod, effects = "fixed",
     term == "Food_TreatmentNo access\nto food" ~  "No access to food",            
     term == "Heat_Treatment20°C - Mid" ~ "20°C - Mid",
     term == "Heat_Treatment25°C - High" ~ "25°C - High",
-    term == "scale(Day_cont)" ~ "Experiment Day",
+    term == "scale(Day_cont)" ~ "Exposure Day",
     term == "scale(AFDM_Total_g)" ~ "AFDM",
     term == "Food_TreatmentNo access\nto food:Heat_Treatment20°C - Mid" ~ "No access to food:\n20°C - Mid",
     term == "Food_TreatmentNo access\nto food:Heat_Treatment25°C - High" ~ "No access to food:\n25°C - High",
-    term == "Food_TreatmentNo access\nto food:scale(Day_cont)" ~ "No access to food:\nExperiment Day",
-    term == "Heat_Treatment20°C - Mid:scale(Day_cont)" ~ "20°C - Mid:\nExperiment Day",
-    term == "Heat_Treatment25°C - High:scale(Day_cont)" ~ "25°C - High:\nExperiment Day"
+    term == "Food_TreatmentNo access\nto food:scale(Day_cont)" ~ "No access to food:\nExposure Day",
+    term == "Heat_Treatment20°C - Mid:scale(Day_cont)" ~ "20°C - Mid:\nExposure Day",
+    term == "Heat_Treatment25°C - High:scale(Day_cont)" ~ "25°C - High:\nExposure Day"
   )) %>%
-  mutate(term = factor(term, levels = c("25°C - High:\nExperiment Day", 
-                                        "20°C - Mid:\nExperiment Day", 
-                                        "No access to food:\nExperiment Day", 
+  mutate(term = factor(term, levels = c("25°C - High:\nExposure Day", 
+                                        "20°C - Mid:\nExposure Day", 
+                                        "No access to food:\nExposure Day", 
                                         "No access to food:\n25°C - High", 
                                         "No access to food:\n20°C - Mid", 
-                                        "AFDM", "Experiment Day", 
+                                        "AFDM", "Exposure Day", 
                                         "25°C - High", "20°C - Mid", 
                                         "No access to food", "Intercept")))
 
@@ -1616,17 +1616,17 @@ mort_surv <- Surv(mort_surv_df$Final_Date, mort_surv_df$censor)
 mort_surv_fit <- survfit(mort_surv ~ treatment, data = mort_surv_df)
 
 
-(Figure_S3 <- ggsurvplot(mort_surv_fit, data = mort_surv_df, conf.int = TRUE,
-           ggtheme = theme.dgm(),
+(Figure_S3 <- ggsurvplot(mort_surv_fit, data = mort_surv_df, conf.int = FALSE,
+                         ggtheme = theme.dgm(),
            legend.labs = levels(mort_surv_df$treatment),
-           palette = c("#4472CA", "#AABDE4", 
+           palette = c("#4472CA", "#AABDE4",
                        "gold", "#FCEB96", 
                        "salmon", "#FCC2BD"),
-           legend.title = "") +
+           legend.title = "")$plot +
   labs(color = "",
        fill = "",
-       x = "\nExperiment Day",
-       y = "Survival Probability\n") 
+       x = "\nExposure Day",
+       y = "Survival Probability\n")
 )
 ```
 
@@ -2102,5 +2102,17 @@ plot(quadra_sem)
 
 # basisSet(quadra_sem)
 
+```
+
+# Estimating mussel mass
+
+```{r}
+# for a 1.5in mussel length
+musselmass = 0.0006832 * (38) ^1.9678096
+
+sea_star_initial_drymass = mean(filter(AFDM_total, 
+                                  Food_Treatment == "Pre-experiment\nControl")$Dry_mass_g)
+  
+mussel_prop_sea_star = (musselmass / sea_star_initial_drymass)*100
 ```
 
