@@ -79,7 +79,7 @@ resistance_raw <- read_excel(here("01_raw_data", "LS_Experiment_Data.xlsx"),
                             sheet = "Resistance_Times")
 
 #colors
-temp_colors <- c("#723163", "#4472CA")
+temp_colors <- c("#9D4388", "#4472CA")
 
 ```
 
@@ -137,7 +137,7 @@ experimental_stars <- phys_char_raw %>%
                                   fill = Temp_Treatment)) + 
   geom_boxplot() +
   theme.dgm() + 
-  scale_fill_manual(values = c("#723163", "#4472CA")) +
+  scale_fill_manual(values = c("#9D4388", "#4472CA")) +
   labs(x = "\nFood Access Treatment", y = "Change in arm radius (mm)\n", fill = "Aquaria\nTemperature\nTreatment") +
   theme(legend.position = "top"))
 
@@ -230,7 +230,7 @@ CI_diff_radius_best_mod <- tidy(diff_radius_best_mod, effects = "fixed",
                                  fill = Temp_Treatment)) + 
   geom_boxplot() +
   theme.dgm() + 
-  scale_fill_manual(values = c("#723163", "#4472CA"))+
+  scale_fill_manual(values = c("#9D4388", "#4472CA"))+
   labs(x = "\nFood Access Treatment", y = "Change in wet weight (g)\n", fill = "Aquaria\nTemperature\nTreatment") +
   theme(legend.position = "top"))
 
@@ -343,7 +343,7 @@ summary(initial_wet_weight_mod)
                                   fill = Temp_Treatment, alpha = Meta_Cat)) + 
   geom_boxplot() +
   theme.dgm() + 
-  scale_fill_manual(values = c("#723163", "#4472CA")) +
+  scale_fill_manual(values = c("#9D4388", "#4472CA")) +
   scale_alpha_manual(values = c(1, 0.3)) +
   labs(x = "\nNutritious state", y = "Initial Wet Weight (g)\n", fill = "Aquaria\nTemperature\nTreatment",
        alpha = "Respirometry\nTemperature") +
@@ -718,7 +718,7 @@ feeding_clean <- feeding_raw  %>%
            .default = NA
          ),
          Heat_Colors = case_when(
-           Temp_Treatment == "10°C" ~ "#723163",
+           Temp_Treatment == "10°C" ~ "#9D4388",
            Temp_Treatment == "15°C" ~ "#4472CA"
          ),
          Amount_Eatten = as.numeric(Amount_Eatten)) %>%
@@ -792,7 +792,7 @@ feeding_rate_df[is.na(feeding_rate_df)] <- 0
                              aes(x = Temp_Treatment, y = Rho, fill = Temp_Treatment)) + 
   geom_boxplot() +
   theme.dgm() + 
-  scale_fill_manual(values = c("#723163", "#4472CA"))+
+  scale_fill_manual(values = c("#9D4388", "#4472CA"))+
   labs(x = "\nAquaria Temperature Treatment", y = "Correlation of Mussel\nConsumption Over Time\n") +
   theme(legend.position = "none")) 
 
@@ -828,7 +828,7 @@ feeding_experiments_sum <- feeding_experiments %>%
                              aes(x = Temp_Treatment, y = Prop_Ate, fill = Temp_Treatment)) + 
   geom_boxplot() +
   theme.dgm() + 
-  scale_fill_manual(values = c("#723163", "#4472CA"))+
+  scale_fill_manual(values = c("#9D4388", "#4472CA"))+
   labs(x = "\nAquaria Temperature Treatment", y="\nTotal Proportion of Mussels Ate\n") +
   theme(legend.position = "none")) 
 

@@ -160,7 +160,8 @@ experimental_stars_surv <- experimental_stars %>%
                                              "No access\nto food 25°C - High")))
 
 (arm_radius_boxplot <- ggplot(experimental_stars_surv, 
-                              aes(x = Food_Treatment, y = diff_radius, fill = Heat_Treatment)) + 
+                              aes(x = Food_Treatment, y = diff_radius, fill = Heat_Treatment)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray", linewidth = 1) + 
   geom_boxplot() +
   theme.dgm() + 
   scale_fill_manual(values = c("#4472CA", "gold", "salmon")) +
@@ -250,7 +251,8 @@ CI_diff_radius_mod_no_inter <- tidy(diff_radius_mod_no_inter, effects = "fixed",
 ```{r, fig.width=6, fig.height=6}
 
 (wet_weight_boxplot <- ggplot(experimental_stars, 
-                             aes(x = Food_Treatment, y = diff_wet_weight, fill = Heat_Treatment)) + 
+                             aes(x = Food_Treatment, y = diff_wet_weight, fill = Heat_Treatment)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray", linewidth = 1) + 
   geom_boxplot() +
   theme.dgm() + 
   scale_fill_manual(values = c("#4472CA", "gold", "salmon"))+
@@ -843,7 +845,7 @@ right_props <- right_clean %>%
                                              "20°C - Mid\nAccess to food",
                                              "15°C - Control\nNo access to food",
                                              "15°C - Control\nAccess to food")),
-         Heat_Treatment = factor(Heat_Treatment, labels = c("15°C\nControl", "20°C\nMid", "25°C\nHigh")),
+         Heat_Treatment = factor(Heat_Treatment, labels = c("15°C Control", "20°C Mid", "25°C High")),
          Food_Treatment = factor(Food_Treatment, levels = c("No access\nto food", "Access\nto food")),
          Day_cont = case_when(
            Timepoint == "T1" ~ "Day 0",
@@ -854,7 +856,7 @@ right_props <- right_clean %>%
          Day_cont = factor(Day_cont, levels = c("Day 0", "Day 5", "Day 10", "Day 15")))
 
 adding_the_0 <- data.frame(Timepoint = "T4",
-                           Heat_Treatment = "25°C\nHigh",
+                           Heat_Treatment = "25°C High",
                            Food_Treatment = "No access\nto food",
                            sample_size = 19,
                            Measure = "Righted",
@@ -871,8 +873,8 @@ treatment_avg_AFDM <- AFDM_clean_ratio_nobaseline %>%
   mutate(Heat_Treatment = factor(Heat_Treatment, levels = c("15°C - Control", 
                                                             "20°C - Mid",
                                                             "25°C - High"),
-                                 labels = c("15°C\nControl", "20°C\nMid",
-                                            "25°C\nHigh")))
+                                 labels = c("15°C Control", "20°C Mid",
+                                            "25°C High")))
 
 right_props_w0 <- rbind(right_props, adding_the_0) %>%
   mutate(prop_bin = cut(Prop, breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1),
@@ -884,10 +886,10 @@ right_props_w0 <- rbind(right_props, adding_the_0) %>%
 
 
 ```{r, fig.width=12.5, fig.height=5}
-(Figure_S4 <- ggplot(filter(right_props_w0, Measure=="Righted"), aes(Heat_Treatment, Food_Treatment, fill = prop_bin)) + 
+(Figure_S4 <- ggplot(filter(right_props_w0, Measure=="Righted"), aes(Day_cont, Food_Treatment, fill = prop_bin)) + 
   geom_tile(color = "black") +
   labs(y = "Food Access Treatment\n",
-       x = "\nAquaria Temperature Treatment", fill = "Percent Righted") +
+       x = "\nExposure Day", fill = "Percent Righted") +
   theme.dgm() +
   theme(
     legend.position = "top",
@@ -897,7 +899,7 @@ right_props_w0 <- rbind(right_props, adding_the_0) %>%
     legend.title = element_text(size = 14)
   ) +
   scale_fill_manual(values = c("#e7696b", "#fdae61", "#ffffbf", "#abdda4", "#519dcc"))+
-  facet_wrap(~Day_cont, nrow = 1) )
+  facet_wrap(~Heat_Treatment, nrow = 1) )
 ```
 
 ```{r, message=FALSE}
@@ -1404,7 +1406,8 @@ Change_Cytes <- Cytes_cleaner %>%
 ```{r, fig.height=7, fig.width=7}
 (coelomocyte_corr_boxplot <- ggplot(Change_Cytes, 
                              aes(x = Day_cont_cat, y = Coelomocyte_Count, fill = Heat_Treatment, 
-                                 alpha = Food_Treatment)) + 
+                                 alpha = Food_Treatment)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray", linewidth = 1) + 
   geom_boxplot(outliers = FALSE) +
   theme.dgm() + 
   scale_fill_manual(values = c("#4472CA", "gold", "salmon")) +
@@ -1949,10 +1952,10 @@ env_temp_summary <- rbind(env_temp_summary, env_temp_summary_satelite) %>%
          mean = round(mean, digits = 2))
 ```
 
-## Table S4
+## Table S1
 
 ```{r}
-write.csv(env_temp_summary, file = here("04_tables_figures", "Table_S4.csv"), 
+write.csv(env_temp_summary, file = here("04_tables_figures", "Table_S1.csv"), 
           row.names = FALSE)
 ```
 
@@ -2058,14 +2061,14 @@ dSep(quadra_sem, basis.set = bs)
 fisherC(quadra_sem, basis.set = bs)
 ```
 
-### Table S9
+### Table S8
 
 ```{r, eval = FALSE}
 
-Table_S9_raw <- summary(quadra_sem)$coefficients
-colnames(Table_S9_raw)[9] <-  "stars"
+Table_S8_raw <- summary(quadra_sem)$coefficients
+colnames(Table_S8_raw)[9] <-  "stars"
 
-Table_S9 <- Table_S9_raw %>%
+Table_S8 <- Table_S8_raw %>%
   mutate(Std.Estimate = signif(Std.Estimate, 3),
          Estimate = signif(Estimate, 3),
          Std.Error = signif(Std.Error, 3),
@@ -2077,21 +2080,21 @@ Table_S9 <- Table_S9_raw %>%
   rename(SE = Std.Error,
          P.Value = P.Value2)
 
-write.csv(Table_S9, file = here("04_tables_figures", "Table_S9.csv"), 
+write.csv(Table_S8, file = here("04_tables_figures", "Table_S8.csv"), 
           row.names = FALSE)
 
 ```
 
-### Table S10
+### Table S9
 
 ```{r, eval =FALSE}
 
-Table_S10 <- summary(quadra_sem)$R2
+Table_S9 <- summary(quadra_sem)$R2
 
-Table_S10 <- Table_S10 %>%
+Table_S9 <- Table_S9 %>%
   dplyr::select(Response, Marginal, Conditional)
 
-write.csv(Table_S10, file = here("04_tables_figures", "Table_S10.csv"), 
+write.csv(Table_S9, file = here("04_tables_figures", "Table_S9.csv"), 
           row.names = FALSE)
 
 ```

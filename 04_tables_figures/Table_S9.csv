@@ -1,17 +1,5 @@
-"Response","Predictor","Estimate","SE","DF","P.Value","Std.Estimate"
-"AFDM_g","Food_Treatment_binary",3.36,1.8,86,"0.0662 ",0.741
-"AFDM_g","Heat_Treatment_num",-0.087,0.0705,65.9,"0.221 ",-0.155
-"AFDM_g","Food_Treatment_binary:Heat_Treatment_num",-0.0871,0.0893,86.5,"0.332 ",-0.395
-"Gonadosomatic_Ratio","Food_Treatment_binary",-0.085,0.047,85.2,"0.0742 ",-0.798
-"Gonadosomatic_Ratio","Heat_Treatment_num",-0.0048,0.0017,71.8,"0.0077 **",-0.361
-"Gonadosomatic_Ratio","Food_Treatment_binary:Heat_Treatment_num",0.0042,0.0023,85.8,"0.0741 ",0.811
-"Righted","Food_Treatment_binary",-4.45,3.94,116,"0.259 ",-0.577
-"Righted","Heat_Treatment_num",-0.656,0.295,116,"0.0262 *",-0.688
-"Righted","AFDM_g",0.263,0.203,116,"0.195 ",0.155
-"Righted","Coelomocyte_Count",-0.0014,7e-04,116,"0.0468 *",-0.31
-"Righted","Food_Treatment_binary:Heat_Treatment_num",0.193,0.2,116,"0.334 ",0.514
-"Coelomocyte_Count","AFDM_g",0.0151,0.0018,116,"0 ***",0.0518
-"Coelomocyte_Count","Gonadosomatic_Ratio",-0.29,0.0685,116,"0 ***",-0.0234
-"Coelomocyte_Count","Food_Treatment_binary",0.781,0.0296,116,"0 ***",0.591
-"Coelomocyte_Count","Heat_Treatment_num",0.106,0.0182,116,"0 ***",0.646
-"Coelomocyte_Count","Food_Treatment_binary:Heat_Treatment_num",-0.0319,0.0013,116,"0 ***",-0.495
+"Response","Marginal","Conditional"
+"AFDM_g",0.19,0.29
+"Gonadosomatic_Ratio",0.07,0.13
+"Righted",0.58,0.83
+"Coelomocyte_Count",0.46,1
