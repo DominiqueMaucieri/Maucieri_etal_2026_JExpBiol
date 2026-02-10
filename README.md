@@ -21,6 +21,7 @@ Authors: [Dominique G. Maucieri](https://dominiquemaucieri.com), Iria Gimenez, K
 * [LS_Physical_Characteristics.xlsx](01_raw_data/LS_Physical_Characteristics.xlsx): Physical Charactersitics for sea stars in Experiment Two.
 * [SeaStar_Physical_Characteristics.xlsx](01_raw_data/SeaStar_Physical_Characteristics.xlsx): Physical Charactersitics for sea stars in Experiment One.
 * [temp_loggers](01_raw_data/temp_loggers): Tank temperature loggers for Experiment Two.
+* [seastars2024_sn_final.csv](01_raw_data/seastars2024_sn_final.csv): Walchem probes sensor network throughout the experiment for individual tanks, can be accessed [from the Hakai data catalogue](https://catalogue.hakai.org/dataset/ca-cioos_31ac855d-bf15-42d8-b20d-754638202c66)
 
 
 [02_scripts](02_scripts/)

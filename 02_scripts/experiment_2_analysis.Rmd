@@ -958,9 +958,20 @@ Loggers_avg <- Loggers %>%
   group_by(Tank) %>%
   summarise(mean_temp = round(mean(daily_avg), 2),
             se_temp = round(sd(daily_avg)/sqrt(length(daily_avg)), 4),
-            .groups = "drop")
+            .groups = "drop") %>%
+  mutate(target_temperature = case_when(
+           Tank == "T10_1st" ~ 10,
+           Tank == "T10_2nd" ~ 10,
+           Tank == "T15_1st" ~ 15,
+           Tank == "T15_2nd" ~ 15
+         )) %>%
+  dplyr::select(Tank, target_temperature, mean_temp, se_temp) %>%
+  rename(Aquaria = Tank,
+         "Target Temperature" = target_temperature,
+         "Mean Temperature" = mean_temp,
+         "Temperature SE" = se_temp)
 
-write.csv(Loggers_avg, file = here("04_tables_figures", "Table_S3.csv"),
+write.csv(Loggers_avg, file = here("04_tables_figures", "Table_S3_b.csv"),
           row.names = FALSE)
 
 ```

@@ -2119,3 +2119,40 @@ sea_star_initial_drymass = mean(filter(AFDM_total,
 mussel_prop_sea_star = (musselmass / sea_star_initial_drymass)*100
 ```
 
+# Loggers
+
+```{r}
+
+hakai_sn_raw <- read.csv(here("01_raw_data",
+                               "seastars2024_sn_final.csv"))
+
+tank_labels <- extractions_raw %>%
+  dplyr::select(Mesocosm_Number, HeatTreatment_Replicate) %>%
+  distinct()
+
+Loggers_avg <- hakai_sn_raw %>%
+  na.omit() %>%
+  group_by(tank, treat) %>%
+  summarise(mean_temp = round(mean(temp), 2),
+            se_temp = round(sd(temp)/sqrt(length(temp)), 4),
+            .groups = "drop") %>%
+  left_join(tank_labels, by = join_by(tank == Mesocosm_Number)) %>%
+  mutate(HeatTreatment_Replicate = if_else(tank == 11, "Mid_R4", HeatTreatment_Replicate),
+         target_temperature = case_when(
+           treat == "Low" ~ 15,
+           treat == "Mid" ~ 20,
+           treat == "High" ~ 25
+         )) %>%
+  dplyr::select(HeatTreatment_Replicate, target_temperature, mean_temp, se_temp) %>%
+  arrange(target_temperature, HeatTreatment_Replicate)%>%
+  rename(Aquaria = HeatTreatment_Replicate,
+         "Target Temperature" = target_temperature,
+         "Mean Temperature" = mean_temp,
+         "Temperature SE" = se_temp)
+
+
+write.csv(Loggers_avg, file = here("04_tables_figures", "Table_S3_a.csv"),
+          row.names = FALSE)
+
+```
+
