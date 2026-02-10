@@ -407,6 +407,17 @@ meta_rates <- meta_rates_raw %>%
          Meta_Cat = factor(Meta_Cat, 
                                  levels = c("Same as\nAquaria", 
                                             "Elevated\n5°C")),
+         Meta_Cat_fig = case_when(
+           Tank_Treatment == "10°C" & Meta_Treatment == "10°C" ~ "10°C\n(acclimation)",
+           Tank_Treatment == "10°C" & Meta_Treatment == "15°C" ~ "15°C\n(acclimation + 5°C)",
+           Tank_Treatment == "15°C" & Meta_Treatment == "15°C" ~ "15°C\n(acclimation)",
+           Tank_Treatment == "15°C" & Meta_Treatment == "20°C" ~ "20°C\n(acclimation + 5°C)"
+         ),
+         Meta_Cat_fig = factor(Meta_Cat_fig, 
+                                 levels = c("10°C\n(acclimation)",
+                                            "15°C\n(acclimation + 5°C)",
+                                            "15°C\n(acclimation)",
+                                            "20°C\n(acclimation + 5°C)")),
          mass_spec_O2 = -1 * mass_spec_O2, 
          Mesocosm_Number = case_when(
            Tank_Treatment == "10°C" & Sampling_Day == "1st_Sampling" ~ "Tank_3",
@@ -421,7 +432,7 @@ meta_rates <- meta_rates_raw %>%
 
 ```{r, fig.height=6, fig.width=8}
 
-(respirometry_boxplot <- ggplot(meta_rates, aes(x = Meta_Cat, y = mass_spec_O2,
+(respirometry_boxplot <- ggplot(meta_rates, aes(x = Meta_Cat_fig, y = mass_spec_O2,
                        alpha = Food_Treatment, fill = Temp_Treatment)) +
   geom_boxplot(position = position_dodge2(preserve = "single")) +
   theme.dgm() +
@@ -431,7 +442,6 @@ meta_rates <- meta_rates_raw %>%
        y = expression(bold("Mass Specific O"[2]*" Rate (mL h"^{-1}*"g"^{-1}*")")),
        alpha = "Food Access\nTreatment", fill = "Aquaria\nTemperature\nTreatment") +
   guides(alpha = guide_legend(override.aes = list(fill = "darkgrey"))) +
-  facet_wrap(~Temp_Treatment) + 
   theme(axis.title.y = element_text(margin = margin(r = 12))))
 
 ```
@@ -524,18 +534,18 @@ CI_meta_best_mod <- tidy(meta_best_mod, effects = "fixed",
 
 # Figure 6
 
-```{r, fig.height=7, fig.width=12}
+```{r, fig.height=7, fig.width=14}
 
 Figure_6_coef <- plot_grid(NULL, plot_CI_meta_best_mod, NULL, ncol = 1, rel_heights = c(0.05,1,0.03))
 
 (Figure_6 <- plot_grid(Figure_6_coef, respirometry_boxplot, nrow = 1, 
-                       labels = c("(a)", "(b)"), rel_widths = c(2/3, 1), 
+                       labels = c("(a)", "(b)"), rel_widths = c(1/2, 1), 
   label_fontfamily = "serif"))
 
 ```
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_6.png"), width = 12, height = 7, units = "in", pointsize = 15, res = 300)
+png(filename = here("04_tables_figures", "Figure_6.png"), width = 14, height = 7, units = "in", pointsize = 15, res = 300)
 Figure_6
 dev.off()
 ```
@@ -560,22 +570,32 @@ resistance_clean <- resistance_raw %>%
          resistance_time_h = resistance_time_m/60) %>%
   dplyr::select(ID, resistance_time_s, resistance_time_m, resistance_time_h) %>%
   left_join(treatment_classifications, by = join_by("ID" == "Seastar_ID")) %>%
-  left_join(weights, by = join_by(ID == ID)) 
+  left_join(weights, by = join_by(ID == ID)) %>%
+  mutate(Meta_Cat_fig = case_when(
+           Temp_Treatment == "10°C" & Meta_Treatment == "10°C" ~ "10°C\n(acclimation)",
+           Temp_Treatment == "10°C" & Meta_Treatment == "15°C" ~ "15°C\n(acclimation + 5°C)",
+           Temp_Treatment == "15°C" & Meta_Treatment == "15°C" ~ "15°C\n(acclimation)",
+           Temp_Treatment == "15°C" & Meta_Treatment == "20°C" ~ "20°C\n(acclimation + 5°C)"
+         ),
+         Meta_Cat_fig = factor(Meta_Cat_fig, 
+                                 levels = c("10°C\n(acclimation)",
+                                            "15°C\n(acclimation + 5°C)",
+                                            "15°C\n(acclimation)",
+                                            "20°C\n(acclimation + 5°C)")))
 
 ```
 
 ```{r}
 
-(resistance_boxplot <- ggplot(resistance_clean, aes(x = Meta_Cat, y = resistance_time_h,
+(resistance_boxplot <- ggplot(resistance_clean, aes(x = Meta_Cat_fig, y = resistance_time_h,
                        alpha = Food_Treatment, fill = Temp_Treatment)) +
   geom_boxplot(position = position_dodge2(preserve = "single")) +
   theme.dgm() +
   scale_fill_manual(values = temp_colors) +
   scale_alpha_manual(values = c(1, 0.3)) +
-  labs(x= "\nRespirometry Temperature", y = "Resistance Time (h)\n",
+  labs(x= "\nRespirometry Temperature", y = "Resistance Time to 28°C (h)\n",
        alpha = "Food Access\nTreatment", fill = "Aquaria\nTemperature\nTreatment") +
-  guides(alpha = guide_legend(override.aes = list(fill = "darkgrey")))+
-  facet_wrap(~Temp_Treatment))
+  guides(alpha = guide_legend(override.aes = list(fill = "darkgrey"))))
 
 
 ```
@@ -674,18 +694,18 @@ CI_resistance_best_mod <- tidy(resistance_best_mod, effects = "fixed",
 
 # Figure 7
 
-```{r, fig.height=7, fig.width=12}
+```{r, fig.height=7, fig.width=14}
 
 Figure_7_coef <- plot_grid(NULL, plot_CI_resistance_best_mod, NULL, ncol = 1, rel_heights = c(0.05,1,0.03))
 
 (Figure_7 <- plot_grid(Figure_7_coef, resistance_boxplot, nrow = 1, 
-                       labels = c("(a)", "(b)"), rel_widths = c(2/3, 1), 
+                       labels = c("(a)", "(b)"), rel_widths = c(1/2, 1), 
   label_fontfamily = "serif"))
 
 ```
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_7.png"), width = 12, height = 7, units = "in", pointsize = 15, res = 300)
+png(filename = here("04_tables_figures", "Figure_7.png"), width = 14, height = 7, units = "in", pointsize = 15, res = 300)
 Figure_7
 dev.off()
 ```
