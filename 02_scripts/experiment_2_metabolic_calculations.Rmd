@@ -2219,3 +2219,94 @@ write.csv(meta_rates, here("03_cleaned_data", "metabolic_rates.csv"), row.names 
 ```
 
 
+
+# Supplemental numbers
+
+```{r}
+
+minimum_o2 <- c(#R1
+                min(Feb18_Tank15C_Meta20C_Chan2_clean$Oxygen),
+                min(Feb18_Tank15C_Meta20C_Chan3_clean$Oxygen),
+                min(Feb18_Tank15C_Meta20C_Chan4_clean$Oxygen),
+                min(Feb18_Tank15C_Meta20C_Chan5_clean$Oxygen),
+                min(Feb18_Tank15C_Meta20C_Chan6_clean$Oxygen),
+                min(Feb18_Tank15C_Meta20C_Chan7_clean$Oxygen),
+                min(Feb18_Tank15C_Meta20C_Chan8_clean$Oxygen),
+                min(Feb18_Tank15C_Meta20C_Chan9_clean$Oxygen),
+                #R2
+                min(Feb18_Tank15C_Meta15C_Chan2_clean$Oxygen),
+                min(Feb18_Tank15C_Meta15C_Chan3_clean$Oxygen),
+                min(Feb18_Tank15C_Meta15C_Chan4_clean$Oxygen),
+                min(Feb18_Tank15C_Meta15C_Chan5_clean$Oxygen),
+                min(Feb18_Tank15C_Meta15C_Chan6_clean$Oxygen),
+                min(Feb18_Tank15C_Meta15C_Chan7_clean$Oxygen),
+                min(Feb18_Tank15C_Meta15C_Chan8_clean$Oxygen),
+                min(Feb18_Tank15C_Meta15C_Chan9_clean$Oxygen),
+                #R3
+                min(Feb18_Tank10C_Meta15C_Chan2_clean$Oxygen),
+                min(Feb18_Tank10C_Meta15C_Chan3_clean$Oxygen),
+                min(Feb18_Tank10C_Meta15C_Chan4_clean$Oxygen),
+                min(Feb18_Tank10C_Meta15C_Chan5_clean$Oxygen),
+                min(Feb18_Tank10C_Meta15C_Chan6_clean$Oxygen),
+                min(Feb18_Tank10C_Meta15C_Chan7_clean$Oxygen),
+                min(Feb18_Tank10C_Meta15C_Chan8_clean$Oxygen),
+                min(Feb18_Tank10C_Meta15C_Chan9_clean$Oxygen),
+                #R4
+                min(Feb18_Tank10C_Meta10C_Chan2_clean$Oxygen),
+                min(Feb18_Tank10C_Meta10C_Chan3_clean$Oxygen),
+                min(Feb18_Tank10C_Meta10C_Chan4_clean$Oxygen),
+                min(Feb18_Tank10C_Meta10C_Chan5_clean$Oxygen),
+                min(Feb18_Tank10C_Meta10C_Chan6_clean$Oxygen),
+                min(Feb18_Tank10C_Meta10C_Chan7_clean$Oxygen),
+                min(Feb18_Tank10C_Meta10C_Chan8_clean$Oxygen),
+                min(Feb18_Tank10C_Meta10C_Chan9_clean$Oxygen),
+                #R5
+                min(Feb19_Tank15C_Meta20C_Chan2_clean$Oxygen),
+                min(Feb19_Tank15C_Meta20C_Chan3_clean$Oxygen),
+                min(Feb19_Tank15C_Meta20C_Chan4_clean$Oxygen),
+                min(Feb19_Tank15C_Meta20C_Chan5_clean$Oxygen),
+                min(Feb19_Tank15C_Meta20C_Chan6_clean$Oxygen),
+                min(Feb19_Tank15C_Meta20C_Chan7_clean$Oxygen),
+                min(Feb19_Tank15C_Meta20C_Chan8_clean$Oxygen),
+                min(Feb19_Tank15C_Meta20C_Chan9_clean$Oxygen),
+                #R6
+                min(Feb19_Tank15C_Meta15C_Chan2_clean$Oxygen),
+                min(Feb19_Tank15C_Meta15C_Chan3_clean$Oxygen),
+                min(Feb19_Tank15C_Meta15C_Chan4_clean$Oxygen),
+                min(Feb19_Tank15C_Meta15C_Chan5_clean$Oxygen),
+                min(Feb19_Tank15C_Meta15C_Chan6_clean$Oxygen),
+                min(Feb19_Tank15C_Meta15C_Chan7_clean$Oxygen),
+                min(Feb19_Tank15C_Meta15C_Chan8_clean$Oxygen),
+                min(Feb19_Tank15C_Meta15C_Chan9_clean$Oxygen),
+                #R7
+                min(Feb19_Tank10C_Meta15C_Chan2_clean$Oxygen),
+                min(Feb19_Tank10C_Meta15C_Chan3_clean$Oxygen),
+                min(Feb19_Tank10C_Meta15C_Chan4_clean$Oxygen),
+                min(Feb19_Tank10C_Meta15C_Chan5_clean$Oxygen),
+                min(Feb19_Tank10C_Meta15C_Chan6_clean$Oxygen),
+                min(Feb19_Tank10C_Meta15C_Chan7_clean$Oxygen),
+                min(Feb19_Tank10C_Meta15C_Chan8_clean$Oxygen),
+                min(Feb19_Tank10C_Meta15C_Chan9_clean$Oxygen),
+                #R8
+                min(Feb19_Tank10C_Meta10C_Chan2_clean$Oxygen),
+                min(Feb19_Tank10C_Meta10C_Chan3_clean$Oxygen),
+                min(Feb19_Tank10C_Meta10C_Chan4_clean$Oxygen),
+                min(Feb19_Tank10C_Meta10C_Chan5_clean$Oxygen),
+                min(Feb19_Tank10C_Meta10C_Chan6_clean$Oxygen),
+                min(Feb19_Tank10C_Meta10C_Chan7_clean$Oxygen),
+                min(Feb19_Tank10C_Meta10C_Chan8_clean$Oxygen),
+                min(Feb19_Tank10C_Meta10C_Chan9_clean$Oxygen)
+                )
+
+mean(minimum_o2)
+
+```
+
+```{r}
+min_o2_under_70 <- minimum_o2[minimum_o2<70]
+
+(length(min_o2_under_70)/length(minimum_o2))*100
+```
+
+
+

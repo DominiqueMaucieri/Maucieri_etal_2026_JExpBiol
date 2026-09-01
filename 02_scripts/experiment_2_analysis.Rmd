@@ -281,6 +281,12 @@ diff_wet_weight_best_mod <- diff_wet_weight_mod_no_inter
 summary(diff_wet_weight_best_mod)
 ```
 
+```{r}
+change_in_wet_weight_food <- experimental_stars %>%
+  group_by(Food_Treatment) %>%
+  summarize(mean = mean(diff_wet_weight, na.rm = TRUE),
+            se = sd(diff_wet_weight, na.rm = TRUE)/sqrt(length(diff_wet_weight)))
+```
 
 
 ```{r}
@@ -353,32 +359,32 @@ summary(initial_wet_weight_mod)
 ```
 
 
-# Figure S7
+# Figure S8
 
 ```{r, fig.width=10, fig.height=10}
 
-Figure_S7_top_coef <- plot_grid(NULL, plot_CI_diff_wet_weight_best_mod, NULL, 
+Figure_S8_top_coef <- plot_grid(NULL, plot_CI_diff_wet_weight_best_mod, NULL, 
                                 ncol = 1, rel_heights = c(0.23,1,0.03))
 
-Figure_S7_top <- plot_grid(Figure_S7_top_coef, wet_weight_boxplot, nrow = 1, 
+Figure_S8_top <- plot_grid(Figure_S8_top_coef, wet_weight_boxplot, nrow = 1, 
                        labels = c("(a)", "(b)"), rel_widths = c(2/3, 1), 
   label_fontfamily = "serif")
 
-Figure_S7_bottom_coef <- plot_grid(NULL, plot_CI_diff_radius_best_mod, NULL, 
+Figure_S8_bottom_coef <- plot_grid(NULL, plot_CI_diff_radius_best_mod, NULL, 
                                 ncol = 1, rel_heights = c(0.23,1,0.03))
 
-Figure_S7_bottom <- plot_grid(Figure_S7_bottom_coef, arm_radius_boxplot, nrow = 1, 
+Figure_S8_bottom <- plot_grid(Figure_S8_bottom_coef, arm_radius_boxplot, nrow = 1, 
                        labels = c("(c)", "(d)"), rel_widths = c(2/3, 1), 
   label_fontfamily = "serif")
 
-(Figure_S7 <- plot_grid(Figure_S7_top, Figure_S7_bottom, ncol = 1))
+(Figure_S8 <- plot_grid(Figure_S8_top, Figure_S8_bottom, ncol = 1))
 
 ```
 
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_S7.png"), width = 10, height = 10, units = "in", pointsize = 15, res = 300)
-Figure_S7
+png(filename = here("04_tables_figures", "Figure_S8.png"), width = 10, height = 10, units = "in", pointsize = 15, res = 300)
+Figure_S8
 dev.off()
 ```
 
@@ -438,11 +444,12 @@ meta_rates <- meta_rates_raw %>%
   theme.dgm() +
   scale_fill_manual(values = temp_colors) +
   scale_alpha_manual(values = c(1, 0.3)) +
-  labs(x= "\nRespirometry Temperature", 
+  labs(x= "\nRespirometry Temperature\n", 
        y = expression(bold("Mass Specific O"[2]*" Rate (mL h"^{-1}*"g"^{-1}*")")),
        alpha = "Food Access\nTreatment", fill = "Aquaria\nTemperature\nTreatment") +
   guides(alpha = guide_legend(override.aes = list(fill = "darkgrey"))) +
-  theme(axis.title.y = element_text(margin = margin(r = 12))))
+  theme(axis.title.y = element_text(margin = margin(r = 12)),
+        axis.text = element_text(size = 14, face = "plain")))
 
 ```
 
@@ -511,11 +518,26 @@ CI_meta_best_mod <- tidy(meta_best_mod, effects = "fixed",
          significance = factor(significance, levels = c("Sig", "No Sig"))) %>%
   mutate(term = case_when(
     term == "(Intercept)" ~ "Intercept",
-    term == "Food_TreatmentNo access\nto food" ~  "No access to food",
-    term == "Temp_Treatment15°C" ~ "15°C",
-    term == "Meta_CatElevated\n5°C" ~ "Elevated respirometry\ntemperature",
-    term == "Food_TreatmentNo access\nto food:Temp_Treatment15°C" ~ "No access to food:\n15°C"
-  ))
+    term == "Food_TreatmentNo access\nto food" ~  "No access to food\n(vs. Access)",
+    term == "Temp_Treatment15°C" ~ "15°C Aquaria\n(vs. 10°C)",
+    term == "Meta_CatElevated\n5°C" ~ "Aquaria Acclimation + 5°C\n(vs. Aquaria Acclimation )",
+    term == "Food_TreatmentNo access\nto food:Temp_Treatment15°C" ~ "No access to food ×\n15°C Aquaria"
+  ), 
+  term = factor(term, levels = c("No access to food ×\n15°C Aquaria",
+                                 "Aquaria Acclimation + 5°C\n(vs. Aquaria Acclimation )",
+                                 "15°C Aquaria\n(vs. 10°C)",
+                                 "No access to food\n(vs. Access)",
+                                 "Intercept")),
+    group = case_when(
+      term == "15°C Aquaria\n(vs. 10°C)" ~ "Temperature",
+      term == "Aquaria Acclimation + 5°C\n(vs. Aquaria Acclimation )" ~ "Respirometry",
+      term == "No access to food\n(vs. Access)" ~ "Food",
+      term == "Intercept" ~ "",
+      term == "No access to food ×\n15°C Aquaria" ~ "Interaction"),
+    group = factor(group, levels = c("", "Food", "Temperature", "Respirometry", "Interaction")))
+
+
+    
 
 
 (plot_CI_meta_best_mod <- ggplot(CI_meta_best_mod, 
@@ -524,11 +546,21 @@ CI_meta_best_mod <- tidy(meta_best_mod, effects = "fixed",
                                                color = significance)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "gray", linewidth = 1) +
   geom_point(size = 4) +
-  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, linewidth = 1)  +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), width = 0.2, linewidth = 1)  +
   scale_color_manual(values = c("palevioletred", "black")) +
   theme.dgm() +
-  labs(x = "\nModel Estimates (± CI)", y = "Predictor Variables\n") +
-  theme(legend.position = "none"))
+  labs(x = "\nModel Estimates:\nMetabolic Rate", y = "") +
+  theme(legend.position = "none")+ 
+  facet_grid(group~., scales = "free_y", switch = "y", space = "free_y") + 
+  theme(strip.placement = "outside",
+        strip.background = element_blank(),
+        strip.text = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 14, face = "plain"),
+        plot.margin = margin(t = 5.5, 
+                             r = 20,  
+                             b = 5.5, 
+                             l = 5.5)
+        ) )
 
 ```
 
@@ -593,9 +625,11 @@ resistance_clean <- resistance_raw %>%
   theme.dgm() +
   scale_fill_manual(values = temp_colors) +
   scale_alpha_manual(values = c(1, 0.3)) +
-  labs(x= "\nRespirometry Temperature", y = "Resistance Time to 28°C (h)\n",
+  labs(x= "\nRespirometry Temperature\n", y = "Resistance Time to 28°C (h)\n",
        alpha = "Food Access\nTreatment", fill = "Aquaria\nTemperature\nTreatment") +
+   theme(axis.text = element_text(size = 14, face = "plain")) +
   guides(alpha = guide_legend(override.aes = list(fill = "darkgrey"))))
+
 
 
 ```
@@ -669,25 +703,42 @@ CI_resistance_best_mod <- tidy(resistance_best_mod, effects = "fixed",
          significance = factor(significance, levels = c("Sig", "No Sig"))) %>%
   mutate(term = case_when(
     term == "(Intercept)" ~ "Intercept",
-    term == "Food_TreatmentNo access\nto food" ~  "No access to food",
-    term == "Temp_Treatment15°C" ~ "15°C",
-    term == "Meta_CatElevated\n5°C" ~ "Elevated respirometry\ntemperature",
-    term == "Food_TreatmentNo access\nto food:Temp_Treatment15°C" ~ "No access to food:\n15°C",
+    term == "Food_TreatmentNo access\nto food" ~  "No access to food\n(vs. Access)",
+    term == "Temp_Treatment15°C" ~ "15°C Aquaria\n(vs. 10°C)",
+    term == "Meta_CatElevated\n5°C" ~ "Aquaria Acclimation + 5°C\n(vs. Aquaria Acclimation )",
     term == "scale(AFDM_g)" ~ "AFDM"
-  ))
+  ), 
+  term = factor(term, levels = c("AFDM",
+                                 "Aquaria Acclimation + 5°C\n(vs. Aquaria Acclimation )",
+                                 "15°C Aquaria\n(vs. 10°C)",
+                                 "No access to food\n(vs. Access)",
+                                 "Intercept")),
+    group = case_when(
+      term == "15°C Aquaria\n(vs. 10°C)" ~ "Temperature",
+      term == "Aquaria Acclimation + 5°C\n(vs. Aquaria Acclimation )" ~ "Respirometry",
+      term == "No access to food\n(vs. Access)" ~ "Food",
+      term == "Intercept" ~ "",
+      term == "AFDM" ~ "Covariate"),
+    group = factor(group, levels = c("", "Food", "Temperature", "Respirometry", "Covariate")))
 
 
 (plot_CI_resistance_best_mod <- ggplot(CI_resistance_best_mod, 
                                            aes(x = estimate, 
                                                y = reorder(term, estimate), 
-                                               color = significance)) +
+                                               color = significance))  +
   geom_vline(xintercept = 0, linetype = "dashed", color = "gray", linewidth = 1) +
   geom_point(size = 4) +
-  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, linewidth = 1)  +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), width = 0.2, linewidth = 1)  +
   scale_color_manual(values = c("palevioletred", "black")) +
   theme.dgm() +
-  labs(x = "\nModel Estimates (± CI)", y = "Predictor Variables\n") +
-  theme(legend.position = "none"))
+  labs(x = "\nModel Estimates:\nResistance Time", y = "") +
+  theme(legend.position = "none")+ 
+  facet_grid(group~., scales = "free_y", switch = "y", space = "free_y") + 
+  theme(strip.placement = "outside",
+        strip.background = element_blank(),
+        strip.text = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 14, face = "plain")
+        ) )
 
 ```
 
@@ -875,27 +926,27 @@ feeding_mod_sum$mean_prop[1] - feeding_mod_sum$mean_prop[2]
 ```
 
 
-# Figure S8
+# Figure S9
 
 ```{r, fig.height=7, fig.width=10}
 
-Figure_S8 <- plot_grid(rate_feeding_boxplot+ labs(x = ""), 
+Figure_S9 <- plot_grid(rate_feeding_boxplot+ labs(x = ""), 
                        total_feeding_boxplot + labs(x = ""), 
                        nrow = 1, 
                        labels = c("(a)", "(b)"), 
   label_fontfamily = "serif")
 
-Figure_S8_xaxis_title <- textGrob("Aquaria Temperature Treatment\n", 
+Figure_S9_xaxis_title <- textGrob("Aquaria Temperature Treatment\n", 
                    gp=gpar(fontface="bold", fontfamily = "serif", 
                            col="black", fontsize=14))
 
-grid.arrange(arrangeGrob(Figure_S8, bottom = Figure_S8_xaxis_title))
+grid.arrange(arrangeGrob(Figure_S9, bottom = Figure_S9_xaxis_title))
 
 ```
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_S8.png"), width = 10, height = 7, units = "in", pointsize = 15, res = 300)
-grid.arrange(arrangeGrob(Figure_S8, bottom = Figure_S8_xaxis_title))
+png(filename = here("04_tables_figures", "Figure_S9.png"), width = 10, height = 7, units = "in", pointsize = 15, res = 300)
+grid.arrange(arrangeGrob(Figure_S9, bottom = Figure_S9_xaxis_title))
 dev.off()
 ```
 
@@ -1000,4 +1051,40 @@ write.csv(Loggers_avg, file = here("04_tables_figures", "Table_S3_b.csv"),
 
 
 
+# Sampling Temperatures
+
+```{r, eval = FALSE}
+
+library(rerddap)
+
+info_crw <- info("NOAA_DHW") 
+
+sampling_sst <- griddap(info_crw,
+              latitude = c(48.700 - 0.05,
+                           48.700 + 0.05),
+              longitude = c(-123.446 - 0.05,
+                            -123.446 + 0.05),
+              time = c(as.character(paste(as.POSIXct("2025-01-11"),
+                                          "T00:00:00Z", sep = "")),
+                       as.character(paste(as.POSIXct("2025-01-11"),
+                                          "T00:00:00Z", sep = ""))),
+              fields = 'CRW_SST', fmt = "csv") %>%
+  filter(is.finite(crw_sst)) %>%
+  summarise(mean_T = mean(crw_sst),
+            se_T = sd(crw_sst)/sqrt(length(crw_sst)))
+
+
+```
+
+```{r}
+
+sampling_air_t <- read.csv(here("01_raw_data/ECCC", "ECCC_Victoria.csv")) %>%
+  rename(time = 'Time..LST.',
+         temp_C = 'Temp...C.') %>%
+  filter(Day == 11 &  time %in% c("17:00", "18:00", "19:00", "20:00", "21:00", "22:00"))%>%
+  summarise(mean_T = mean(temp_C),
+            se_T = sd(temp_C)/sqrt(length(temp_C)))
+
+
+```
 

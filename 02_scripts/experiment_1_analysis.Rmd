@@ -336,31 +336,41 @@ CI_diff_wetweight_mod_no_inter <- tidy(diff_wet_weight_mod_no_inter, effects = "
 
 ```
 
-# Figure S5
+```{r}
+
+wet_weight_temp_means <- experimental_stars %>%
+  group_by(Heat_Treatment) %>%
+  summarize(mean = mean(diff_wet_weight, na.rm = TRUE),
+            se = sd(diff_wet_weight, na.rm = TRUE)/sqrt(length(diff_wet_weight)))
+
+```
+
+
+# Figure S6
 
 ```{r, fig.width=7, fig.height=10}
 
-Figure_S5_top_coef <- plot_grid(NULL, plot_CI_diff_wetweight_mod_no_inter, NULL, 
+Figure_S6_top_coef <- plot_grid(NULL, plot_CI_diff_wetweight_mod_no_inter, NULL, 
                                 ncol = 1, rel_heights = c(0.3,1,0.03))
 
-Figure_S5_top <- plot_grid(Figure_S5_top_coef, wet_weight_boxplot, nrow = 1, 
+Figure_S6_top <- plot_grid(Figure_S6_top_coef, wet_weight_boxplot, nrow = 1, 
                        labels = c("(a)", "(b)"), rel_widths = c(2/3, 1), 
   label_fontfamily = "serif")
 
-Figure_S5_bottom_coef <- plot_grid(NULL, plot_CI_diff_radius_mod_no_inter, NULL, 
+Figure_S6_bottom_coef <- plot_grid(NULL, plot_CI_diff_radius_mod_no_inter, NULL, 
                                 ncol = 1, rel_heights = c(0.3,1,0.03))
 
-Figure_S5_bottom <- plot_grid(Figure_S5_bottom_coef, arm_radius_boxplot, nrow = 1, 
+Figure_S6_bottom <- plot_grid(Figure_S6_bottom_coef, arm_radius_boxplot, nrow = 1, 
                        labels = c("(c)", "(d)"), rel_widths = c(2/3, 1), 
   label_fontfamily = "serif")
 
-(Figure_S5 <- plot_grid(Figure_S5_top, Figure_S5_bottom, ncol = 1))
+(Figure_S6 <- plot_grid(Figure_S6_top, Figure_S6_bottom, ncol = 1))
 
 ```
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_S5.png"), width = 10, height = 10, units = "in", pointsize = 15, res = 300)
-Figure_S5
+png(filename = here("04_tables_figures", "Figure_S6.png"), width = 10, height = 10, units = "in", pointsize = 15, res = 300)
+Figure_S6
 dev.off()
 ```
 
@@ -487,7 +497,8 @@ AFDM_clean_ratio_nobaseline <- AFDM_clean_ratio %>%
   theme.dgm() + 
   scale_fill_manual(values = c("#4472CA", "gold", "salmon"))+
   labs(x = "\nFood Access Treatment", y = "Gonadosomatic Ratio\n", fill = "Aquaria\nTemperature\nTreatment") +
-  theme(legend.position = "top") +
+  theme(legend.position = "top",
+        axis.text = element_text(size = 14, face = "plain")) +
   guides(fill=guide_legend(nrow=3,byrow=TRUE))) 
 
 ```
@@ -609,14 +620,23 @@ CI_afdm_mod_best <- tidy(afdm_mod_best, effects = "fixed",
          significance = factor(significance, levels = c("Sig", "No Sig"))) %>%
   mutate(term = case_when(
     term == "(Intercept)" ~ "Intercept",
-    term == "Food_TreatmentNo access\nto food" ~  "No access to food",                         
-    term == "Heat_Treatment20°C - Mid" ~ "20°C - Mid",
-    term == "Heat_Treatment25°C - High" ~ "25°C - High"
+    term == "Food_TreatmentNo access\nto food" ~  "No access to food\n(vs. Access)",            
+    term == "Heat_Treatment20°C - Mid" ~ "20°C - Mid\n(vs. 15°C)",
+    term == "Heat_Treatment25°C - High" ~ "25°C - High\n(vs. 15°C)"
   ), 
-  term = factor(term, levels = c("25°C - High",
-                                 "20°C - Mid",
-                                 "No access to food",
-                                 "Intercept")))
+  term = factor(term, levels = c("25°C - High\n(vs. 15°C)",
+                                 "20°C - Mid\n(vs. 15°C)",
+                                 "No access to food\n(vs. Access)",
+                                 "Intercept")),
+    group = case_when(
+      term == "25°C - High\n(vs. 15°C)" ~ "Temperature",
+      term == "20°C - Mid\n(vs. 15°C)" ~ "Temperature",
+      term == "No access to food\n(vs. Access)" ~ "Food",
+      term == "Intercept" ~ ""),
+    group = factor(group, levels = c("", "Food", "Temperature")))
+
+
+    
 
 
 (plot_CI_afdm_mod_best <- ggplot(CI_afdm_mod_best, 
@@ -625,17 +645,25 @@ CI_afdm_mod_best <- tidy(afdm_mod_best, effects = "fixed",
                                                color = significance)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "gray", linewidth = 1) +
   geom_point(size = 4) +
-  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, linewidth = 1)  +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), width = 0.2, linewidth = 1)  +
   scale_color_manual(values = c("palevioletred", "black")) +
   theme.dgm() +
-  labs(x = "\n\nModel Estimates (± CI)", y = "Predictor Variables\n") +
-  theme(legend.position = "none"))
+  labs(x = "\nModel Estimates:\nGonadosomatic Ratio", y = "") +
+  theme(legend.position = "none")+ 
+  facet_grid(group~., scales = "free_y", switch = "y", space = "free_y") + 
+  theme(strip.placement = "outside",
+        strip.background = element_blank(),
+        strip.text = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 14, face = "plain")
+        ))
+
+
 
 ```
 
 # Figure 4
 
-```{r, fig.height=7, fig.width=8}
+```{r, fig.height=7, fig.width=9}
 
 Figure_4_coef <- plot_grid(NULL, plot_CI_afdm_mod_best, ncol = 1, rel_heights = c(0.21,1))
 
@@ -646,17 +674,17 @@ Figure_4_coef <- plot_grid(NULL, plot_CI_afdm_mod_best, ncol = 1, rel_heights = 
 ```
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_4.png"), width = 8, height = 7, units = "in", pointsize = 15, res = 300)
+png(filename = here("04_tables_figures", "Figure_4.png"), width = 9, height = 7, units = "in", pointsize = 15, res = 300)
 Figure_4
 dev.off()
 ```
 
 
-# Figure S2
+# Figure S3
 
 ```{r, fig.height=7, fig.width=8}
 
-(Figure_S2 <- ggplot(AFDM_clean_ratio, 
+(Figure_S3 <- ggplot(AFDM_clean_ratio, 
                              aes(x = Food_Treatment, y = ratio, fill = Heat_Treatment)) + 
   geom_boxplot() +
   theme.dgm() + 
@@ -667,8 +695,8 @@ dev.off()
 ```
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_S2.png"), width = 9, height = 7, units = "in", pointsize = 15, res = 300)
-Figure_S2
+png(filename = here("04_tables_figures", "Figure_S3.png"), width = 9, height = 7, units = "in", pointsize = 15, res = 300)
+Figure_S3
 dev.off()
 ```
 
@@ -805,7 +833,7 @@ CI_righted_bin_best_mod <- tidy(righted_bin_best_mod, effects = "fixed",
 
 ```
 
-### Figure S4
+### Figure S5
 
 ```{r}
 
@@ -886,7 +914,7 @@ right_props_w0 <- rbind(right_props, adding_the_0) %>%
 
 
 ```{r, fig.width=12.5, fig.height=5}
-(Figure_S4 <- ggplot(filter(right_props_w0, Measure=="Righted"), aes(Day_cont, Food_Treatment, fill = prop_bin)) + 
+(Figure_S5 <- ggplot(filter(right_props_w0, Measure=="Righted"), aes(Day_cont, Food_Treatment, fill = prop_bin)) + 
   geom_tile(color = "black") +
   labs(y = "Food Access Treatment\n",
        x = "\nExposure Day", fill = "Percent Righted") +
@@ -903,8 +931,8 @@ right_props_w0 <- rbind(right_props, adding_the_0) %>%
 ```
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_S4.png"), width = 12.5, height = 5, units = "in", pointsize = 15, res = 300)
-Figure_S4
+png(filename = here("04_tables_figures", "Figure_S5.png"), width = 12.5, height = 5, units = "in", pointsize = 15, res = 300)
+Figure_S5
 dev.off()
 ```
 
@@ -1041,7 +1069,8 @@ righted_fit_all_plot_surv <- ggsurvplot(
 
 (righted_fit_all_plot <- righted_fit_all_plot_surv$plot + 
   theme.dgm() +
-  theme(legend.position = "top") +
+  theme(legend.position = "top",
+        axis.text = element_text(size = 14, face = "plain")) +
   scale_linetype_manual(values = c(1, 3, 1, 3, 1, 3)) +
   labs(color = "Treatment\nCombination", 
        fill = "Treatment\nCombination", 
@@ -1066,21 +1095,30 @@ right_gam_mod_ests <- as.data.frame(summary(right_gam_oneinter)$p.table) %>%
   mutate(significance = if_else(conf.low > 0 | conf.high < 0, "Sig", "No Sig"),
          significance = factor(significance, levels = c("Sig", "No Sig"))) %>%
   mutate(term = case_when(
-    term == "Food_TreatmentNo access\nto food" ~  "No access\nto food",            
-    term == "Heat_Treatment20°C\nMid" ~ "20°C - Mid",
-    term == "Heat_Treatment25°C\nHigh" ~ "25°C - High",
-    term == "Food_TreatmentNo access\nto food:Heat_Treatment20°C\nMid" ~ "No access\nto food:\n20°C - Mid",
-    term == "Food_TreatmentNo access\nto food:Heat_Treatment25°C\nHigh" ~ "No access\nto food:\n25°C - High",
+    term == "Food_TreatmentNo access\nto food" ~  "No access to food\n(vs. Access)",            
+    term == "Heat_Treatment20°C\nMid" ~ "20°C - Mid\n(vs. 15°C)",
+    term == "Heat_Treatment25°C\nHigh" ~ "25°C - High\n(vs. 15°C)",
+    term == "Food_TreatmentNo access\nto food:Heat_Treatment20°C\nMid" ~ "No access to food ×\n20°C - Mid",
+    term == "Food_TreatmentNo access\nto food:Heat_Treatment25°C\nHigh" ~ "No access to food ×\n25°C - High",
     term == "scale(AFDM_Total_g)" ~ "AFDM",
     term == "scale(Timepoint_cont)" ~ "Exposure Day"
     ),
     term = factor(term, levels = c("Exposure Day",
-                                   "AFDM", 
-                                   "No access\nto food:\n25°C - High",
-                                   "No access\nto food:\n20°C - Mid",
-                                   "25°C - High",
-                                   "20°C - Mid",
-                                   "No access\nto food")))
+                                   "AFDM",
+                                   "No access to food ×\n25°C - High",
+                                   "No access to food ×\n20°C - Mid",
+                                   "25°C - High\n(vs. 15°C)",
+                                   "20°C - Mid\n(vs. 15°C)",
+                                   "No access to food\n(vs. Access)")),
+    group = case_when(
+      term == "Exposure Day" ~ "Covariates",
+      term == "AFDM" ~ "Covariates",
+      term == "No access to food ×\n25°C - High" ~ "Interactions",
+      term == "No access to food ×\n20°C - Mid" ~ "Interactions",
+      term == "25°C - High\n(vs. 15°C)" ~ "Temperature",
+      term == "20°C - Mid\n(vs. 15°C)" ~ "Temperature",
+      term == "No access to food\n(vs. Access)" ~ "Food"),
+    group = factor(group, levels = c("Food", "Temperature", "Interactions", "Covariates")))
 
 
 (plot_right_gam_mod_ests <- ggplot(right_gam_mod_ests, 
@@ -1089,30 +1127,36 @@ right_gam_mod_ests <- as.data.frame(summary(right_gam_oneinter)$p.table) %>%
                                                color = significance)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "gray", linewidth = 1) +
   geom_point(size = 4) +
-  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, linewidth = 1)  +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), width = 0.2, linewidth = 1)  +
   scale_color_manual(values = c("palevioletred", "black")) +
   theme.dgm() +
-  labs(x = "\nEstimate", y = "Predictor") +
-  theme(legend.position = "none"))
+  labs(x = "\nModel Estimates:\nTime to Right", y = "") +
+  theme(legend.position = "none")+ 
+  facet_grid(group~., scales = "free_y", switch = "y", space = "free_y") + 
+  theme(strip.placement = "outside",
+        strip.background = element_blank(),
+        strip.text = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 14, face = "plain")
+        ))
 
 ```
 
 
 ### Figure 2
 
-```{r, fig.height=7, fig.width=11}
+```{r, fig.height=7, fig.width=12}
 
 Figure_2_coef <- plot_grid(NULL, plot_right_gam_mod_ests, ncol = 1, rel_heights = c(0.2,1))
 
 (Figure_2 <- plot_grid(Figure_2_coef, righted_fit_all_plot, nrow = 1, 
-                       labels = c("(a)", "(b)"), rel_widths = c(1/2, 1), 
+                       labels = c("(a)", "(b)"), rel_widths = c(5/8, 1), 
   label_fontfamily = "serif", 
                        vjust = 8))
 
 ```
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_2.png"), width = 11, height = 7, units = "in", pointsize = 15, res = 300)
+png(filename = here("04_tables_figures", "Figure_2.png"), width = 12, height = 7, units = "in", pointsize = 15, res = 300)
 Figure_2
 dev.off()
 ```
@@ -1242,7 +1286,7 @@ feeding_experiments_sum <- feeding_experiments %>%
   geom_boxplot() +
   theme.dgm() + 
   scale_fill_manual(values = c("#4472CA", "gold", "salmon"))+
-  labs(x = "\nAquariaTemperature Treatment", y = "\nTotal Proportion of Mussels Ate\n") +
+  labs(x = "\nAquaria Temperature Treatment", y = "\nTotal Proportion of Mussels Ate\n") +
   theme(legend.position = "none")) 
 
 ```
@@ -1291,26 +1335,26 @@ feeding_mod_sum$mean_prop[1] - feeding_mod_sum$mean_prop[3]
 ```
 
 
-# Figure S6
+# Figure S7
 
 ```{r, fig.height=7, fig.width=10}
 
-Figure_S6 <- plot_grid(rate_feeding_boxplot+ labs(x = ""), 
+Figure_S7 <- plot_grid(rate_feeding_boxplot+ labs(x = ""), 
                        total_feeding_boxplot + labs(x = ""), 
                        nrow = 1, 
                        labels = c("(a)", "(b)"), 
   label_fontfamily = "serif")
 
-Figure_S6_xaxis_title <- textGrob("Aquaria Temperature Treatment\n", 
+Figure_S7_xaxis_title <- textGrob("Aquaria Temperature Treatment\n", 
                    gp=gpar(fontface="bold", fontfamily = "serif", col="black", fontsize=14))
 
-grid.arrange(arrangeGrob(Figure_S6, bottom = Figure_S6_xaxis_title))
+grid.arrange(arrangeGrob(Figure_S7, bottom = Figure_S7_xaxis_title))
 
 ```
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_S6.png"), width = 10, height = 7, units = "in", pointsize = 15, res = 300)
-grid.arrange(arrangeGrob(Figure_S6, bottom = Figure_S6_xaxis_title))
+png(filename = here("04_tables_figures", "Figure_S7.png"), width = 10, height = 7, units = "in", pointsize = 15, res = 300)
+grid.arrange(arrangeGrob(Figure_S7, bottom = Figure_S7_xaxis_title))
 dev.off()
 ```
 
@@ -1414,8 +1458,9 @@ Change_Cytes <- Cytes_cleaner %>%
   scale_alpha_manual(values = c(1, 0.5)) +
   labs(alpha = "Access to\nFood", y = "Change in Coelomocyte Counts From Baseline\n", 
        fill = "Aquaria\nTemperature\nTreatment",
-       x = "\nExposure Day") +
-  theme(legend.position = "right") +
+       x = "\nExposure Day\n") +
+  theme(legend.position = "right",
+        axis.text = element_text(size = 14, face = "plain")) +
   guides(alpha = guide_legend(override.aes = list(fill = "darkgrey"))))
 
 
@@ -1521,25 +1566,41 @@ CI_cytes_change_best_mod <- tidy(cytes_change_best_mod, effects = "fixed",
          significance = factor(significance, levels = c("Sig", "No Sig"))) %>%
   mutate(term = case_when(
     term == "(Intercept)" ~ "Intercept",
-    term == "Food_TreatmentNo access\nto food" ~  "No access to food",            
-    term == "Heat_Treatment20°C - Mid" ~ "20°C - Mid",
-    term == "Heat_Treatment25°C - High" ~ "25°C - High",
+    term == "Food_TreatmentNo access\nto food" ~  "No access to food\n(vs. Access)",            
+    term == "Heat_Treatment20°C - Mid" ~ "20°C - Mid\n(vs. 15°C)",
+    term == "Heat_Treatment25°C - High" ~ "25°C - High\n(vs. 15°C)",
     term == "scale(Day_cont)" ~ "Exposure Day",
     term == "scale(AFDM_Total_g)" ~ "AFDM",
-    term == "Food_TreatmentNo access\nto food:Heat_Treatment20°C - Mid" ~ "No access to food:\n20°C - Mid",
-    term == "Food_TreatmentNo access\nto food:Heat_Treatment25°C - High" ~ "No access to food:\n25°C - High",
-    term == "Food_TreatmentNo access\nto food:scale(Day_cont)" ~ "No access to food:\nExposure Day",
-    term == "Heat_Treatment20°C - Mid:scale(Day_cont)" ~ "20°C - Mid:\nExposure Day",
-    term == "Heat_Treatment25°C - High:scale(Day_cont)" ~ "25°C - High:\nExposure Day"
+    term == "Food_TreatmentNo access\nto food:Heat_Treatment20°C - Mid" ~ "No access to food ×\n20°C - Mid",
+    term == "Food_TreatmentNo access\nto food:Heat_Treatment25°C - High" ~ "No access to food ×\n25°C - High",
+    term == "Food_TreatmentNo access\nto food:scale(Day_cont)" ~ "No access to food ×\nExposure Day",
+    term == "Heat_Treatment20°C - Mid:scale(Day_cont)" ~ "20°C - Mid ×\nExposure Day",
+    term == "Heat_Treatment25°C - High:scale(Day_cont)" ~ "25°C - High ×\nExposure Day"
   )) %>%
-  mutate(term = factor(term, levels = c("25°C - High:\nExposure Day", 
-                                        "20°C - Mid:\nExposure Day", 
-                                        "No access to food:\nExposure Day", 
-                                        "No access to food:\n25°C - High", 
-                                        "No access to food:\n20°C - Mid", 
-                                        "AFDM", "Exposure Day", 
-                                        "25°C - High", "20°C - Mid", 
-                                        "No access to food", "Intercept")))
+  mutate(term = factor(term, levels = c("Exposure Day", 
+                                        "AFDM", 
+                                        "25°C - High ×\nExposure Day", 
+                                        "20°C - Mid ×\nExposure Day", 
+                                        "No access to food ×\nExposure Day", 
+                                        "No access to food ×\n25°C - High", 
+                                        "No access to food ×\n20°C - Mid", 
+                                        "25°C - High\n(vs. 15°C)", 
+                                        "20°C - Mid\n(vs. 15°C)", 
+                                        "No access to food\n(vs. Access)", 
+                                        "Intercept")),
+         group = case_when(
+          term == "Intercept" ~ "",
+          term == "Exposure Day" ~ "Covariates",
+          term == "AFDM" ~ "Covariates",
+          term == "No access to food ×\n25°C - High" ~ "Interactions",
+          term == "No access to food ×\n20°C - Mid" ~ "Interactions",
+          term == "25°C - High ×\nExposure Day" ~ "Interactions", 
+          term == "20°C - Mid ×\nExposure Day" ~ "Interactions", 
+          term == "No access to food ×\nExposure Day" ~ "Interactions", 
+          term == "25°C - High\n(vs. 15°C)" ~ "Temperature",
+          term == "20°C - Mid\n(vs. 15°C)" ~ "Temperature",
+          term == "No access to food\n(vs. Access)" ~ "Food"),
+        group = factor(group, levels = c("", "Food", "Temperature", "Interactions", "Covariates")))
 
 
 (plot_CI_cytes_change_best_mod <- ggplot(CI_cytes_change_best_mod, 
@@ -1551,14 +1612,26 @@ CI_cytes_change_best_mod <- tidy(cytes_change_best_mod, effects = "fixed",
   geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, linewidth = 1)  +
   scale_color_manual(values = c("palevioletred", "black")) +
   theme.dgm() +
-  labs(x = "\nModel Estimates (± CI)", y = "Predictor Variables\n") +
-  theme(legend.position = "none"))
+  labs(x = "\nModel Estimates:\nChange in Coelomocyte Counts", y = "") +
+  theme(legend.position = "none")+ 
+  facet_grid(group~., scales = "free_y", switch = "y", space = "free_y") + 
+  theme(strip.placement = "outside",
+        strip.background = element_blank(),
+        strip.text = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 14, face = "plain")
+        ))
+
+
+
+
+
+
 
 ```
 
 #Figure 3
 
-```{r, fig.height=7, fig.width=13}
+```{r, fig.height=9, fig.width=13}
 
 (Figure_3 <- plot_grid(plot_CI_cytes_change_best_mod, coelomocyte_corr_boxplot, nrow = 1, 
                        labels = c("(a)", "(b)"), rel_widths = c(3/5, 1), 
@@ -1567,14 +1640,14 @@ CI_cytes_change_best_mod <- tidy(cytes_change_best_mod, effects = "fixed",
 ```
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_3.png"), width = 13, height = 7, units = "in", pointsize = 15, res = 300)
+png(filename = here("04_tables_figures", "Figure_3.png"), width = 13, height = 9, units = "in", pointsize = 15, res = 300)
 Figure_3
 dev.off()
 ```
 
 # Survival
 
-## Figure S3
+## Figure S4
 
 ```{r, message = FALSE}
 
@@ -1619,7 +1692,7 @@ mort_surv <- Surv(mort_surv_df$Final_Date, mort_surv_df$censor)
 mort_surv_fit <- survfit(mort_surv ~ treatment, data = mort_surv_df)
 
 
-(Figure_S3 <- ggsurvplot(mort_surv_fit, data = mort_surv_df, conf.int = FALSE,
+(Figure_S4 <- ggsurvplot(mort_surv_fit, data = mort_surv_df, conf.int = FALSE,
                          ggtheme = theme.dgm(),
            legend.labs = levels(mort_surv_df$treatment),
            palette = c("#4472CA", "#AABDE4",
@@ -1634,8 +1707,8 @@ mort_surv_fit <- survfit(mort_surv ~ treatment, data = mort_surv_df)
 ```
 
 ```{r, message=FALSE}
-png(filename = here("04_tables_figures", "Figure_S3.png"), width = 7, height = 7, units = "in", pointsize = 15, res = 300)
-Figure_S3
+png(filename = here("04_tables_figures", "Figure_S4.png"), width = 7, height = 7, units = "in", pointsize = 15, res = 300)
+Figure_S4
 dev.off()
 ```
 
@@ -1806,14 +1879,17 @@ Christopher D. G. Harley First published: 17 June 2021
 konecny_heating <- read.csv(here("01_raw_data/Konecny_etal_2021", "01_Quadra_heatingData.csv")) %>%
   filter(treatment %in% c("Control")) %>%
   dplyr::select("pool_ID", "treatment", "time", "temperature") %>%
-  na.omit()
+  na.omit() %>%
+  mutate(pool_ID = paste0("control_", pool_ID, "_heating_experiment"))
 konecny_cooling <- read.csv(here("01_raw_data/Konecny_etal_2021", "02_Quadra_coolingData.csv")) %>%
   filter(treatment == "Control")%>%
-  dplyr::select("pool_ID", "treatment", "time", "temperature")
+  dplyr::select("pool_ID", "treatment", "time", "temperature")%>%
+  mutate(pool_ID = paste0("control_", pool_ID, "_cooling_experiment"))
 
 konecny_data <- rbind(konecny_heating, konecny_cooling) %>%
   mutate(pool_ID = as.factor(pool_ID),
-         tidepool = "Tidepools\n")
+         tidepool = "Tidepools\n",
+         time = as.POSIXct(time,format='%H:%M'))
 
 konecny_data %>%
   summarize(mean_temp = mean(temperature),
@@ -1822,6 +1898,15 @@ konecny_data %>%
             min_temp = min(temperature)) %>%
   kable(digits = 2, align = "c", caption = "Temperature summary from Konecny et al 2021 Tidepool study") %>%
   kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+
+```{r}
+ggplot(konecny_data, aes(x = time, y = temperature, color = pool_ID)) + 
+  geom_line(aes(group = pool_ID)) + 
+  theme.dgm()
+
+
 ```
 
 
@@ -1857,7 +1942,7 @@ single_tidepool_temp_plot <- ggplot(konecny_data, aes(x = tidepool, y = temperat
         plot.background = element_rect(fill = "grey92", colour = NA))
 ```
 
-## Envronmental Range
+## Environmental Range
 
 ```{r}
 
@@ -1958,6 +2043,40 @@ env_temp_summary <- rbind(env_temp_summary, env_temp_summary_satelite) %>%
 write.csv(env_temp_summary, file = here("04_tables_figures", "Table_S1.csv"), 
           row.names = FALSE)
 ```
+
+# Sampling Temperatures
+
+```{r}
+
+Quadra_CO2_2024_sampling_temp <- read.csv(here("01_raw_data/Hyacinthe_Buoy", "Quadra_2024_postexperiment_CO2.csv"))  %>%
+  mutate(date = as.POSIXct(.$date.and.time.in.GMT..yyyy.mm.dd.hh.mm.ss., 
+                           format = "%Y-%m-%d %H:%M"),
+         julian = format(date, "%j")) %>%
+  rename(pH_T = pH_T..total.scale..Waters.et.al.constants.,
+         Temp_C = TSG.T..deg.C.) %>%
+  dplyr::select(date, pH_T, Temp_C, Year, julian) %>%
+  dplyr::filter(is.nan(pH_T) == FALSE,
+         is.nan(Temp_C) == FALSE) %>%
+  mutate(julian = as.numeric(julian)) %>%
+  filter(julian %in% 
+           c(format(as.POSIXct("2024-09-12"), "%j"):format(as.POSIXct("2024-09-16"), "%j"))) %>%
+  summarise(mean_T = mean(Temp_C),
+            se_T = sd(Temp_C)/sqrt(length(Temp_C)))
+
+
+```
+
+```{r}
+sampling_air_t <- read.csv(here("01_raw_data/ECCC", "ECCC_CampbellRiver.csv")) %>%
+  rename(time = 'Time..LST.',
+         temp_C = 'Temp...C.') %>%
+  filter(Day %in% c(12,13,16) & time %in% c("08:00", "09:00", "10:00", "11:00", "12:00"))%>%
+  summarise(mean_T = mean(temp_C),
+            se_T = sd(temp_C)/sqrt(length(temp_C)))
+
+```
+
+
 
 
 # SEM
@@ -2128,17 +2247,53 @@ hakai_sn_raw <- read.csv(here("01_raw_data",
 
 tank_labels <- extractions_raw %>%
   dplyr::select(Mesocosm_Number, HeatTreatment_Replicate) %>%
-  distinct()
+  distinct() %>%
+ filter(paste0(Mesocosm_Number, "_", HeatTreatment_Replicate) != "27_Low_R7")
 
-Loggers_avg <- hakai_sn_raw %>%
+
+Loggers_avg_noMid_R4 <- hakai_sn_raw %>%
   na.omit() %>%
+  mutate(date_time = as.POSIXlt(date_time)) %>%
+  #filtering for after experimental temperatures were reached
+  filter(date_time > as.POSIXlt("2024-10-16 17:15:00")) %>% 
   group_by(tank, treat) %>%
   summarise(mean_temp = round(mean(temp), 2),
             se_temp = round(sd(temp)/sqrt(length(temp)), 4),
             .groups = "drop") %>%
   left_join(tank_labels, by = join_by(tank == Mesocosm_Number)) %>%
-  mutate(HeatTreatment_Replicate = if_else(tank == 11, "Mid_R4", HeatTreatment_Replicate),
-         target_temperature = case_when(
+  filter(HeatTreatment_Replicate != "Mid_R4" & !is.na(HeatTreatment_Replicate)) 
+
+
+#Mid_R4 was moved from Tank 15 to Tank 11 on 2024-10-28 11:40:00 due to electrical issue
+#so combined the tank temperatures from the two tanks for only the times experienced by 
+#the sea stars
+Loggers_avg_tank11_after <- hakai_sn_raw %>%
+  na.omit() %>%
+  mutate(date_time = as.POSIXlt(date_time)) %>%
+  #filtering for after experimental temperatures were reached
+  filter(date_time > as.POSIXlt("2024-10-28 11:40:00") &
+           tank == 11) 
+
+Loggers_avg_Mid_R4 <- hakai_sn_raw %>%
+  na.omit() %>%
+  mutate(date_time = as.POSIXlt(date_time)) %>%
+  #filtering for after experimental temperatures were reached
+  filter(date_time > as.POSIXlt("2024-10-16 17:15:00") &
+           date_time < as.POSIXlt("2024-10-28 11:40:00") &
+           tank == 15) %>%
+  rbind(., Loggers_avg_tank11_after) %>%
+  summarise(mean_temp = round(mean(temp), 2),
+            se_temp = round(sd(temp)/sqrt(length(temp)), 4),
+            .groups = "drop")  %>%
+  mutate(tank = "15_11",
+         treat = "Mid",
+        HeatTreatment_Replicate = "Mid_R4") %>%
+  dplyr::select(tank, treat, mean_temp, se_temp, HeatTreatment_Replicate)
+  
+
+Loggers_avg_w_Mid_R4 <- Loggers_avg_noMid_R4 %>%
+  rbind(., Loggers_avg_Mid_R4) %>%
+  mutate(target_temperature = case_when(
            treat == "Low" ~ 15,
            treat == "Mid" ~ 20,
            treat == "High" ~ 25
@@ -2151,7 +2306,7 @@ Loggers_avg <- hakai_sn_raw %>%
          "Temperature SE" = se_temp)
 
 
-write.csv(Loggers_avg, file = here("04_tables_figures", "Table_S3_a.csv"),
+write.csv(Loggers_avg_w_Mid_R4, file = here("04_tables_figures", "Table_S3_a.csv"),
           row.names = FALSE)
 
 ```
