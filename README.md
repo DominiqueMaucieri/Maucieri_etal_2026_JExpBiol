@@ -4,7 +4,7 @@ Data and R code accompanying:
 
 <b>Fed or famished: The role of food availability in the physiological and behavioural responses of <i>Dermasterias imbricata</i> to prolonged thermal stress</b>
 
-Authors: [Dominique G. Maucieri](https://dominiquemaucieri.com), Iria Gimenez, Kate Rolheiser, Alyssa-Lois M. Gehman, Brenna Collicutt, Agnes Djioua, Jacob M. Etzkorn, Bradford Vinson, and [Amanda E. Bates](https://www.oceanconservationlab.com/)
+Authors: [Dominique G. Maucieri](https://dominiquemaucieri.com), Iria Gimenez, Kate Rolheiser, Alyssa-Lois M. Gehman, Brenna Collicutt, Agnes Djioua, Jacob M. Etzkorn, Bradford Vinson, and [Amanda E. Bates](https://www.oceanconservationlab.ca/)
 
 ****
 
