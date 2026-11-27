@@ -1,3 +1,5 @@
+[![Figshare](https://img.shields.io/badge/DOI-10.6084/m9.figshare.28773449-blue)](https://doi.org/10.6084/m9.figshare.28773449)
+
 ****
 
 Data and R code accompanying:
